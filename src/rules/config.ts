@@ -5,10 +5,15 @@
 
 /** Chi classification, relative to the inlet speed u_in. */
 export const CHI = {
-  /** Faster than this × u_in is sha chi (rushing). */
-  shaAbove: 0.6,
+  /** More than this × u_in is sha chi (rushing). */
+  shaAbove: 0.7,
   /** Slower than this × u_in is si chi (stagnant). In between is sheng (healthy). */
   siBelow: 0.08,
+  /**
+   * Chi spreads from moving air into the space around it, halving every this
+   * many cm (walls and furniture block it). 0 turns spreading off.
+   */
+  spreadHalfDistanceCm: 60,
   /**
    * The bed is solid in 2D, so no chi flows *over* it. We measure the chi
    * mix in a band this wide around the bed instead (where a sleeper's head
@@ -23,20 +28,35 @@ export const CHI = {
 
 /** Simulation settings. Lengths in cm, speeds in lattice units (cells per step). */
 export const SIM = {
-  /** Speed chi enters through the main door. Kept low (≈ 0.05–0.08) so the solver stays stable. */
+  /**
+   * Reference chi speed u_in (lattice units): roughly how fast chi comes through an
+   * unobstructed door. Kept low (≈ 0.05–0.08) so the solver stays stable. The chi
+   * classes are measured relative to this.
+   */
   inletSpeed: 0.06,
-  /** Steps over which the inlet speed ramps up from 0, to avoid a startup shock. */
+  /**
+   * How chi enters through the main door:
+   *  - 'pressure': the door holds slightly higher pressure than the room and chi
+   *    flows in as fast as the room allows, so blocking the path slows everything down.
+   *  - 'velocity': chi is pushed in at exactly inletSpeed, however blocked the room is.
+   */
+  inletMode: 'pressure' as 'pressure' | 'velocity',
+  /** Steps over which the inlet pressure/speed ramps up from 0, to avoid a startup shock. */
   inletRampSteps: 300,
   quality: {
-    standard: { cellCm: 5, tau: 0.6 },
+    /**
+     * tau sets the "thickness" (viscosity) of chi: higher spreads the stream out more.
+     * inletPressure is tuned so an unobstructed door gives about inletSpeed.
+     */
+    standard: { cellCm: 5, tau: 0.9, inletPressure: 0.025 },
     /**
      * Half-size cells. Viscosity in lattice units must double to keep the
-     * same look (same Reynolds number), hence the larger relaxation time tau.
+     * same look (same Reynolds number), hence the larger tau.
      */
-    high: { cellCm: 2.5, tau: 0.7 },
+    high: { cellCm: 2.5, tau: 1.3, inletPressure: 0.024 },
   },
   /** Fraction of velocity removed per step in porous cells (plants, chairs). */
-  porousDrag: 0.12,
+  porousDrag: 0.3,
   settle: {
     /** Measure the mean speed every N steps... */
     sampleEvery: 50,

@@ -66,15 +66,16 @@ Rules must not depend on the renderer. The sim and the rule engine both read the
   - rugs → no obstacle
   - low furniture (nightstand, bed) → still solid in 2D
 - **Sources and sinks:**
-  - Main entrance (open) = velocity inlet, the main source of chi.
+  - Main entrance (open) = **pressure inlet** (`SIM.inletMode`), the main source of chi: the door holds slightly higher density than the room, so obstacles in the path reduce the inflow and slow the whole stream. Door pressure and viscosity per quality level are in `SIM.quality`, tuned so an unobstructed door gives about `SIM.inletSpeed`.
   - Open windows and other open doors = open outlets (zero-gradient / pressure boundary).
   - If the main door is the only opening, split the doorway into inflow and outflow halves so chi enters, circulates and returns, and note this in the UI.
   - If the main door is closed, show a message: "Open the door to let chi in."
 - **Visuals:** (1) tracer particles and streaklines emitted from the door, fading trails; (2) a toggleable heatmap coloured by chi type; (3) optional velocity arrows. Play / pause / step / reset and a speed slider.
-- **Chi classification** per fluid cell, using speed relative to inlet speed `u_in` (thresholds live in `rules/config.ts`):
-  - **Sha chi** (rushing, harmful): speed > 0.6 · u_in → red
-  - **Sheng chi** (healthy, meandering): between → green/gold
-  - **Si chi** (stagnant): speed < 0.08 · u_in, measured once flow has settled → blue-grey
+- **Chi field:** chi spreads from moving air into the still space around it (`chiField()`): each floor cell takes max(own speed, α · average of floor neighbours), halving every `CHI.spreadHalfDistanceCm` (60 cm); walls and furniture block it. Classification and the heatmap use this chi level, not the raw speed. Computed in the worker a few times a second.
+- **Chi classification** per fluid cell, using the chi level relative to the reference speed `u_in` = `SIM.inletSpeed` (thresholds live in `rules/config.ts`). The heatmap is a smooth gradient on the same scale (blue-grey → yellow → red):
+  - **Sha chi** (rushing, harmful): chi > 0.7 · u_in → red
+  - **Sheng chi** (healthy, meandering): between → yellow/gold
+  - **Si chi** (stagnant): chi < 0.08 · u_in, measured once flow has settled → blue-grey
   - "Settled" = mean fluid speed changes by less than a small tolerance over a window of N steps, or a max step count is reached (both in config).
 - **Sim statistics passed to the rules:** % of floor area in each class, the class mix over the bed's footprint, and stagnant regions larger than 0.5 m².
   - The bed is solid in 2D, so "over the bed's footprint" is measured in a band around the bed (`CHI.bedZoneCm`, 30 cm).

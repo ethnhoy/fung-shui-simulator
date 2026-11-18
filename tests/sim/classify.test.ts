@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { sampleLayout } from '../../src/model/sample';
 import { CHI, SIM } from '../../src/rules/config';
-import { CLASS_CODE, classifyField, classifySpeed, computeStats, findStagnantRegions, SettleDetector } from '../../src/sim/classify';
+import { chiField, CLASS_CODE, classifyChi, classifyField, classifySpeed, computeStats, findStagnantRegions, SettleDetector } from '../../src/sim/classify';
 import { cellIndexAt, rasterise } from '../../src/sim/rasterise';
 
 const u = SIM.inletSpeed;
@@ -45,7 +45,8 @@ describe('stats on a synthetic field', () => {
     // ...except a 50 × 50 cm patch (0.25 m²) and a 100 × 100 cm patch (1 m²).
     for (let y = 250; y < 300; y += 5) for (let x = 300; x < 350; x += 5) ux[cellIndexAt(grid, { x, y })] = 0;
     for (let y = 230; y < 330; y += 5) for (let x = 60; x < 160; x += 5) ux[cellIndexAt(grid, { x: x + 1, y: y + 1 })] = 0;
-    const regions = findStagnantRegions(grid, classifyField(grid, ux, uy));
+    // Spreading off (half-distance 0) so this tests the flood fill on its own.
+    const regions = findStagnantRegions(grid, classifyChi(grid, chiField(grid, ux, uy, 0)));
     expect(regions).toHaveLength(1);
     expect(regions[0].areaCm2).toBeCloseTo(10000, -2);
   });
@@ -75,5 +76,44 @@ describe('SettleDetector', () => {
   it('gives up waiting at maxSteps', () => {
     const d = new SettleDetector();
     expect(d.add(SIM.settle.maxSteps, Math.random())).toBe(true);
+  });
+});
+
+describe('chiField (chi spreading from moving air)', () => {
+  const grid = rasterise(sampleLayout());
+  const n = grid.nx * grid.ny;
+  const at = (x: number, y: number) => cellIndexAt(grid, { x, y });
+
+  it('spreads into still air nearby, halving about every half-distance', () => {
+    const ux = new Float32Array(n);
+    const uy = new Float32Array(n);
+    // A moving column of air at x = 300 cm (open floor, away from furniture).
+    for (let y = 200; y < 300; y += 5) ux[at(301, y + 1)] = u;
+    const chi = chiField(grid, ux, uy, 60);
+    expect(chi[at(301, 251)]).toBeCloseTo(u, 5); // the source keeps its own speed
+    const near = chi[at(331, 251)];
+    const far = chi[at(361, 251)];
+    expect(near).toBeGreaterThan(0);
+    expect(near).toBeLessThan(u);
+    expect(far).toBeLessThan(near); // fades with distance
+  });
+
+  it('does not pass through walls or solid furniture', () => {
+    const ux = new Float32Array(n);
+    const uy = new Float32Array(n);
+    for (let y = 120; y < 200; y += 5) ux[at(236, y + 1)] = u; // just right of the bed
+    const chi = chiField(grid, ux, uy, 60);
+    expect(chi[at(140, 100)]).toBe(0); // inside the bed: not floor, nothing spreads there
+    expect(chi[at(-3, 100)]).toBe(0); // inside the left wall
+  });
+
+  it('turns stagnant cells next to a flow into sheng', () => {
+    const ux = new Float32Array(n);
+    const uy = new Float32Array(n);
+    for (let y = 200; y < 300; y += 5) ux[at(301, y + 1)] = u * 0.5;
+    const spread = classifyField(grid, ux, uy);
+    const raw = classifyChi(grid, chiField(grid, ux, uy, 0));
+    expect(raw[at(321, 251)]).toBe(CLASS_CODE.si);
+    expect(spread[at(321, 251)]).toBe(CLASS_CODE.sheng);
   });
 });

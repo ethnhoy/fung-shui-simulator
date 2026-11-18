@@ -8,10 +8,10 @@
  */
 import type { Point } from '../model/types';
 import { FLOW_VIEW } from '../rules/config';
-import { classifySpeed } from './classify';
 import { sampleVelocity } from './field';
 import { cellIndexAt } from './rasterise';
-import { Cell, type ChiClass, type RasterGrid } from './types';
+import { SIM } from '../rules/config';
+import { Cell, type RasterGrid } from './types';
 
 export interface Particle {
   x: number;
@@ -19,7 +19,8 @@ export interface Particle {
   age: number;
   /** Recent positions, oldest first, for drawing the trail. */
   trail: Point[];
-  chi: ChiClass;
+  /** Chi level here as a fraction of the reference speed (0 = still, 1 = full door speed). Sets the colour. */
+  level: number;
 }
 
 export class ParticleSystem {
@@ -29,11 +30,12 @@ export class ParticleSystem {
   private grid: RasterGrid | null = null;
   private ux: Float32Array | null = null;
   private uy: Float32Array | null = null;
+  private chi: Float32Array | null = null;
 
   setGrid(grid: RasterGrid): void {
     this.grid = grid;
     this.particles = [];
-    this.ux = this.uy = null;
+    this.ux = this.uy = this.chi = null;
     // Particles are born in the first room cell inside each inlet cell.
     this.spawnPoints = [];
     grid.cells.forEach((c, k) => {
@@ -48,6 +50,11 @@ export class ParticleSystem {
   setField(ux: Float32Array, uy: Float32Array): void {
     this.ux = ux;
     this.uy = uy;
+  }
+
+  /** The spread-out chi field, used to colour particles the same way as the heatmap. */
+  setChi(chi: Float32Array): void {
+    this.chi = chi;
   }
 
   clear(): void {
@@ -85,7 +92,10 @@ export class ParticleSystem {
       p.age++;
       if (dead || p.age > FLOW_VIEW.maxAge) continue;
       const v = sampleVelocity(grid, ux, uy, p);
-      p.chi = classifySpeed(Math.hypot(v.x, v.y));
+      const k = cellIndexAt(grid, p);
+      // Colour by the chi field where we have it (matches the heatmap), else by local speed.
+      const value = this.chi && k >= 0 ? Math.max(this.chi[k], Math.hypot(v.x, v.y)) : Math.hypot(v.x, v.y);
+      p.level = value / SIM.inletSpeed;
       p.trail.push({ x: p.x, y: p.y });
       if (p.trail.length > FLOW_VIEW.trailLength) p.trail.shift();
       alive.push(p);
@@ -104,7 +114,7 @@ export class ParticleSystem {
       const sp = this.spawnPoints[Math.floor(Math.random() * this.spawnPoints.length)];
       const x = sp.x + (Math.random() - 0.5) * jitter;
       const y = sp.y + (Math.random() - 0.5) * jitter;
-      this.particles.push({ x, y, age: 0, trail: [{ x, y }], chi: 'sha' });
+      this.particles.push({ x, y, age: 0, trail: [{ x, y }], level: 1 });
     }
     if (this.particles.length >= FLOW_VIEW.maxParticles) this.spawnBudget = 0;
   }

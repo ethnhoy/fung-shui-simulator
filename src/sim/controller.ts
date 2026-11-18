@@ -8,7 +8,7 @@
 import type { Store } from '../editor/store';
 import { roomPolygon } from '../geometry/room';
 import { FLOW_VIEW, SIM } from '../rules/config';
-import { classifyField, computeStats } from './classify';
+import { classifyChi, computeStats } from './classify';
 import type { FromWorker, ToWorker } from './messages';
 import { ParticleSystem } from './particles';
 import { rasterise, type Quality } from './rasterise';
@@ -25,7 +25,6 @@ export interface SimStatus {
   stats: SimStats | null;
 }
 
-const STATS_INTERVAL_MS = 250;
 const RERUN_DELAY_MS = 300;
 
 export class SimController {
@@ -37,7 +36,6 @@ export class SimController {
   private runId = 0;
   private rafId = 0;
   private rerunTimer: number | undefined;
-  private lastStatsAt = 0;
   private listeners = new Set<(s: SimStatus) => void>();
 
   /** True while the user wants it playing (particles move, solver runs until settled). */
@@ -100,7 +98,6 @@ export class SimController {
     this.field = null;
     this.runId++;
     this.particles.setGrid(grid);
-    this.lastStatsAt = 0;
     this.setStatus({ mode: grid.mode, step: 0, settled: false, unstable: false, stats: null, running: false });
 
     if (grid.mode === 'doorClosed' || grid.mode === 'noDoor') {
@@ -109,7 +106,18 @@ export class SimController {
     }
     const q = SIM.quality[this.quality];
     // Note: the grid's typed arrays are *copied* into the worker here (structured clone).
-    this.send({ type: 'init', grid, params: { tau: q.tau, porousDrag: SIM.porousDrag, inletRampSteps: SIM.inletRampSteps }, runId: this.runId });
+    this.send({
+      type: 'init',
+      grid,
+      params: {
+        tau: q.tau,
+        porousDrag: SIM.porousDrag,
+        inletRampSteps: SIM.inletRampSteps,
+        inletMode: SIM.inletMode,
+        inletPressure: q.inletPressure,
+      },
+      runId: this.runId,
+    });
     this.send({ type: 'speed', stepsPerBatch: this.batchSize() });
     if (!this.playing) this.send({ type: 'pause' });
   }
@@ -174,15 +182,15 @@ export class SimController {
     }
     this.field = { ux: msg.ux, uy: msg.uy };
     this.particles.setField(msg.ux, msg.uy);
-    const classes = classifyField(this.grid, msg.ux, msg.uy);
-    this.renderer.setClasses(classes);
 
-    // Stats (with the flood fill) are a little heavier, so update them a few times a second.
-    const now = performance.now();
+    // The chi field (flow spread into the room) arrives a few times a second.
+    // Classes, the heatmap and the statistics are all derived from it.
     let stats = this.status.stats;
-    if (msg.settled || !msg.running || now - this.lastStatsAt > STATS_INTERVAL_MS) {
+    if (msg.chi) {
+      const classes = classifyChi(this.grid, msg.chi);
+      this.renderer.setChi(msg.chi, classes);
+      this.particles.setChi(msg.chi);
       stats = computeStats(this.grid, classes, msg.step, msg.settled);
-      this.lastStatsAt = now;
     }
     this.setStatus({ step: msg.step, settled: msg.settled, running: msg.running, stats });
   }

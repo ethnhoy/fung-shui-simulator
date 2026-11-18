@@ -55,6 +55,10 @@ export interface SolverParams {
   tau: number;
   porousDrag: number;
   inletRampSteps: number;
+  /** 'velocity' pushes chi in at a fixed speed; 'pressure' lets the room's resistance set the speed. */
+  inletMode?: 'velocity' | 'pressure';
+  /** For the pressure inlet: extra density at the door (lattice units), e.g. 0.01. */
+  inletPressure?: number;
 }
 
 export type ChiClass = 'sha' | 'sheng' | 'si';

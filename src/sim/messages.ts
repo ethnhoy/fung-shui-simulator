@@ -24,5 +24,7 @@ export type FromWorker =
       running: boolean;
       ux: Float32Array;
       uy: Float32Array;
+      /** The spread-out chi field (see chiField), sent a few times a second; null in between. */
+      chi: Float32Array | null;
     }
   | { type: 'unstable'; runId: number; step: number };

@@ -25,11 +25,54 @@ export interface RenderOptions {
   arrows: boolean;
 }
 
-export const CHI_COLOURS: Record<ChiClass, { rgb: [number, number, number]; css: string; label: string }> = {
-  sha: { rgb: [208, 83, 63], css: '#d0533f', label: 'Sha chi: rushing' },
-  sheng: { rgb: [201, 176, 64], css: '#c9b040', label: 'Sheng chi: healthy' },
-  si: { rgb: [118, 140, 163], css: '#768ca3', label: 'Si chi: stagnant' },
+/** One representative colour per class (legend swatches). */
+export const CHI_COLOURS: Record<ChiClass, { css: string; label: string }> = {
+  sha: { css: 'rgb(198, 66, 50)', label: 'Sha chi: rushing' },
+  sheng: { css: 'rgb(222, 196, 86)', label: 'Sheng chi: healthy' },
+  si: { css: 'rgb(118, 140, 163)', label: 'Si chi: stagnant' },
 };
+/**
+ * The chi colour ramp, by chi level (fraction of the reference speed):
+ * still blue-grey → soft yellow → gold → orange → red. A smooth gradient
+ * instead of three flat colours, so you can see the flow speed up and slow down.
+ * The class boundaries (si below 0.08, sha above 0.7) sit on this same scale.
+ */
+export const CHI_RAMP: [number, [number, number, number]][] = [
+  [0.0, [118, 140, 163]], // still: blue-grey
+  [0.08, [178, 178, 140]], // edge of stagnant: muted olive
+  [0.22, [222, 196, 86]], // gentle: soft yellow
+  [0.45, [226, 168, 62]], // lively: gold-amber
+  [0.7, [221, 122, 58]], // edge of rushing: orange
+  [1.0, [198, 66, 50]], // rushing: red
+];
+
+/** Interpolate the ramp at a chi level (0 = still, 1 = door speed). */
+export function chiRgb(level: number): [number, number, number] {
+  const l = Math.max(0, Math.min(CHI_RAMP[CHI_RAMP.length - 1][0], level));
+  let i = 0;
+  while (i < CHI_RAMP.length - 2 && l > CHI_RAMP[i + 1][0]) i++;
+  const [l0, c0] = CHI_RAMP[i];
+  const [l1, c1] = CHI_RAMP[i + 1];
+  const t = (l - l0) / (l1 - l0);
+  return [0, 1, 2].map((k) => Math.round(c0[k] + (c1[k] - c0[k]) * t)) as [number, number, number];
+}
+
+/** The same ramp as a CSS gradient, for the legend. */
+export function chiCssGradient(): string {
+  const max = CHI_RAMP[CHI_RAMP.length - 1][0];
+  return `linear-gradient(90deg, ${CHI_RAMP.map(([l, c]) => `rgb(${c.join(',')}) ${(l / max) * 100}%`).join(', ')})`;
+}
+
+/** Particles are drawn in a handful of colour bands (one canvas path per band keeps drawing fast). */
+const PARTICLE_BANDS = [0.04, 0.15, 0.3, 0.5, 0.7, 0.9, 1.0].map((l) => {
+  const [r, g, b] = chiRgb(l);
+  return { upTo: l, css: `rgb(${r},${g},${b})` };
+});
+const bandOf = (level: number) => {
+  for (let i = 0; i < PARTICLE_BANDS.length - 1; i++) if (level < (PARTICLE_BANDS[i].upTo + PARTICLE_BANDS[i + 1].upTo) / 2) return i;
+  return PARTICLE_BANDS.length - 1;
+};
+
 const FLOOR = '#f4ece0';
 const HEAT_ALPHA = 0.5;
 
@@ -70,6 +113,7 @@ export class FlowRenderer {
   private heatLayer: HTMLCanvasElement | null = null;
   private heatKey = '';
   private classes: Uint8Array | null = null;
+  private chi: Float32Array | null = null;
   private classesVersion = 0;
 
   constructor(private canvas: HTMLCanvasElement) {
@@ -88,7 +132,9 @@ export class FlowRenderer {
     }
   }
 
-  setClasses(classes: Uint8Array): void {
+  /** New chi field and the classes derived from it (classes drive the hatching/dots patterns). */
+  setChi(chi: Float32Array, classes: Uint8Array): void {
+    this.chi = chi;
     this.classes = classes;
     this.classesVersion++;
   }
@@ -120,7 +166,7 @@ export class FlowRenderer {
     ctx.fill();
     ctx.clip(); // nothing below spills outside the room
 
-    if (grid && opts.heatmap && this.classes) this.drawHeatmap(grid, view);
+    if (grid && opts.heatmap && this.classes && this.chi) this.drawHeatmap(grid, view);
     if (grid && opts.arrows && field) this.drawArrows(grid, field, view.scale);
     if (opts.particles) this.drawParticles(particles, view.scale);
     ctx.restore();
@@ -153,7 +199,7 @@ export class FlowRenderer {
     for (let k = 0; k < classes.length; k++) {
       const c = classes[k];
       if (c === CLASS_CODE.none) continue;
-      const rgb = c === CLASS_CODE.sha ? CHI_COLOURS.sha.rgb : c === CLASS_CODE.sheng ? CHI_COLOURS.sheng.rgb : CHI_COLOURS.si.rgb;
+      const rgb = chiRgb(this.chi![k] / SIM.inletSpeed);
       img.data.set([rgb[0], rgb[1], rgb[2], 255], k * 4);
       if (c === CLASS_CODE.sha) shaImg.data[k * 4 + 3] = 255;
       if (c === CLASS_CODE.si) siImg.data[k * 4 + 3] = 255;
@@ -230,17 +276,19 @@ export class FlowRenderer {
     const ctx = this.ctx;
     ctx.lineCap = 'round';
     ctx.lineWidth = 1.6 / scale;
-    const kinds: ChiClass[] = ['si', 'sheng', 'sha'];
-    // Trails fade towards the tail. Drawing one path per (fade level, colour)
+    // Sort particles into colour bands once per frame.
+    const bands = PARTICLE_BANDS.map(() => [] as Particle[]);
+    for (const p of particles) bands[bandOf(p.level)].push(p);
+    // Trails fade towards the tail. Drawing one path per (fade level, colour band)
     // instead of one per segment keeps this to a few dozen canvas calls a frame.
     const levels = Math.max(1, ...particles.map((p) => p.trail.length));
     for (let level = 1; level < levels; level++) {
       ctx.globalAlpha = (level / levels) * 0.7;
-      for (const kind of kinds) {
-        ctx.strokeStyle = CHI_COLOURS[kind].css;
+      bands.forEach((band, b) => {
+        if (!band.length) return;
+        ctx.strokeStyle = PARTICLE_BANDS[b].css;
         ctx.beginPath();
-        for (const p of particles) {
-          if (p.chi !== kind) continue;
+        for (const p of band) {
           // Align trails on their newest point so every particle's head is at the brightest level.
           const i = p.trail.length - levels + level;
           if (i < 1) continue;
@@ -248,19 +296,20 @@ export class FlowRenderer {
           ctx.lineTo(p.trail[i].x, p.trail[i].y);
         }
         ctx.stroke();
-      }
+      });
     }
     ctx.globalAlpha = 0.95;
-    for (const kind of kinds) {
-      ctx.fillStyle = CHI_COLOURS[kind].css;
+    bands.forEach((band, b) => {
+      if (!band.length) return;
+      ctx.fillStyle = PARTICLE_BANDS[b].css;
       ctx.beginPath();
-      for (const p of particles) {
-        if (p.chi !== kind) continue;
+      for (const p of band) {
         ctx.moveTo(p.x + 2.2 / scale, p.y);
         ctx.arc(p.x, p.y, 2.2 / scale, 0, Math.PI * 2);
       }
       ctx.fill();
-    }
+    });
     ctx.globalAlpha = 1;
   }
+
 }

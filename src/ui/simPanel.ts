@@ -3,7 +3,7 @@
  * legend, and live statistics.
  */
 import type { SimController, SimStatus } from '../sim/controller';
-import { CHI_COLOURS } from '../sim/renderer';
+import { CHI_COLOURS, chiCssGradient } from '../sim/renderer';
 import type { ChiClass, ClassMix } from '../sim/types';
 import { h } from './dom';
 
@@ -67,6 +67,8 @@ export function buildSimPanel(root: HTMLElement, sim: SimController): void {
   const statsBox = h('div', { class: 'sim-stats' });
 
   const legend = h('div', { class: 'legend' },
+    h('div', { class: 'legend-gradient', style: `background: ${chiCssGradient()}`, role: 'img', 'aria-label': 'Colour scale from still blue-grey through yellow to rushing red' }),
+    h('div', { class: 'legend-scale' }, h('span', {}, 'still'), h('span', {}, 'gentle'), h('span', {}, 'rushing')),
     (['sha', 'sheng', 'si'] as ChiClass[]).map((k) =>
       h('div', { class: 'legend-row' },
         h('span', { class: 'legend-swatch', style: SWATCH_STYLE[k], 'aria-hidden': 'true' }),

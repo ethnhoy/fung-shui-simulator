@@ -118,6 +118,12 @@ export class LbmSolver {
     const ramp = Math.min(1, (this.stepCount + 1) / this.params.inletRampSteps);
     const inUx = inletVelocity.x * ramp;
     const inUy = inletVelocity.y * ramp;
+    // Direction into the room (unit vector), used by the pressure inlet.
+    const inLen = Math.hypot(inletVelocity.x, inletVelocity.y) || 1;
+    const nx0 = inletVelocity.x / inLen;
+    const ny0 = inletVelocity.y / inLen;
+    const pressureInlet = this.params.inletMode === 'pressure';
+    const inRho = 1 + (this.params.inletPressure ?? 0) * ramp;
 
     // --- Pass 1: density and velocity of every non-solid cell (needed by the boundaries).
     for (let k = 0; k < n; k++) {
@@ -147,12 +153,25 @@ export class LbmSolver {
       if (type === Cell.SOLID) continue;
 
       if (type === Cell.INLET) {
-        // Velocity inlet: force the cell to equilibrium at the inlet velocity,
-        // borrowing density from the cell just inside so pressure stays smooth.
-        const r = rho[neighbor[k]];
-        ux[k] = inUx;
-        uy[k] = inUy;
-        for (let q = 0; q < Q; q++) f[q * n + k] = feq(q, r, inUx, inUy);
+        if (pressureInlet) {
+          // Pressure inlet: the doorway holds slightly higher "pressure" (density)
+          // than the room, and chi flows in as fast as the room lets it. Block the
+          // path and less chi gets in, so everything downstream slows down.
+          // Velocity comes from the cell just inside, keeping only the inward part
+          // (no chi leaks back out of the main door).
+          const nb = neighbor[k];
+          const inward = Math.max(0, ux[nb] * nx0 + uy[nb] * ny0);
+          ux[k] = inward * nx0;
+          uy[k] = inward * ny0;
+          for (let q = 0; q < Q; q++) f[q * n + k] = feq(q, inRho, ux[k], uy[k]);
+        } else {
+          // Velocity inlet: force the cell to equilibrium at a fixed inlet velocity,
+          // borrowing density from the cell just inside so pressure stays smooth.
+          const r = rho[neighbor[k]];
+          ux[k] = inUx;
+          uy[k] = inUy;
+          for (let q = 0; q < Q; q++) f[q * n + k] = feq(q, r, inUx, inUy);
+        }
         continue;
       }
       if (type === Cell.OUTLET) {

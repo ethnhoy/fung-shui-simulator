@@ -18,14 +18,77 @@ export function classifySpeed(speed: number, inletSpeed: number = SIM.inletSpeed
   return 'sheng';
 }
 
-/** Classify every floor cell. Returns a byte per cell using CLASS_CODE. */
-export function classifyField(grid: RasterGrid, ux: Float32Array, uy: Float32Array): Uint8Array {
+/**
+ * The "chi field": how much chi is present in each floor cell.
+ *
+ * Moving air carries chi, and chi also spreads gently into the space around
+ * it, fading with distance and stopped by walls and furniture. We start
+ * from each cell's flow speed and repeatedly let every cell take a slightly
+ * faded average of its neighbours, keeping whichever is larger:
+ *
+ *     chi[k] = max(speed[k], α · average(chi of neighbouring floor cells))
+ *
+ * Repeating this (Gauss–Seidel iteration) until nothing changes gives a
+ * smooth halo around the flow. α is chosen so the halo halves every
+ * CHI.spreadHalfDistanceCm, whatever the cell size.
+ */
+export function chiField(grid: RasterGrid, ux: Float32Array, uy: Float32Array, halfDistanceCm: number = CHI.spreadHalfDistanceCm): Float32Array {
+  const { nx, ny, floor } = grid;
+  const n = nx * ny;
+  const speed = new Float32Array(n);
+  const chi = new Float32Array(n);
+  for (let k = 0; k < n; k++) {
+    if (!floor[k]) continue;
+    speed[k] = Math.hypot(ux[k], uy[k]);
+    chi[k] = speed[k];
+  }
+  if (halfDistanceCm <= 0) return chi;
+
+  // Per-cell fade r (0.5 per half-distance), turned into the averaging factor α.
+  // (For a 1D profile chi ∝ rⁱ, the update rule above requires r + 1/r = (4 − 2α)/α.)
+  const r = Math.pow(0.5, grid.cellCm / halfDistanceCm);
+  const alpha = 4 / (r + 1 / r + 2);
+  const tolerance = SIM.inletSpeed * 1e-4;
+  const maxIterations = 4000;
+
+  for (let iter = 0; iter < maxIterations; iter++) {
+    let maxChange = 0;
+    for (let j = 1; j < ny - 1; j++) {
+      for (let i = 1; i < nx - 1; i++) {
+        const k = j * nx + i;
+        if (!floor[k]) continue;
+        // Average over the four neighbours that are floor (walls and furniture don't pass chi on).
+        let sum = 0;
+        let count = 0;
+        if (floor[k - 1]) { sum += chi[k - 1]; count++; }
+        if (floor[k + 1]) { sum += chi[k + 1]; count++; }
+        if (floor[k - nx]) { sum += chi[k - nx]; count++; }
+        if (floor[k + nx]) { sum += chi[k + nx]; count++; }
+        if (count === 0) continue;
+        const next = Math.max(speed[k], (alpha * sum) / 4 + (alpha * (4 - count) * chi[k]) / 4);
+        const change = Math.abs(next - chi[k]);
+        if (change > maxChange) maxChange = change;
+        chi[k] = next;
+      }
+    }
+    if (maxChange < tolerance) break;
+  }
+  return chi;
+}
+
+/** Classify every floor cell from the chi field. Returns a byte per cell using CLASS_CODE. */
+export function classifyChi(grid: RasterGrid, chi: Float32Array): Uint8Array {
   const out = new Uint8Array(grid.nx * grid.ny);
   for (let k = 0; k < out.length; k++) {
     if (!grid.floor[k]) continue;
-    out[k] = CLASS_CODE[classifySpeed(Math.hypot(ux[k], uy[k]))];
+    out[k] = CLASS_CODE[classifySpeed(chi[k])];
   }
   return out;
+}
+
+/** Convenience: chi field + classification straight from a velocity field. */
+export function classifyField(grid: RasterGrid, ux: Float32Array, uy: Float32Array): Uint8Array {
+  return classifyChi(grid, chiField(grid, ux, uy));
 }
 
 function mixOf(classes: Uint8Array, mask: Uint8Array): ClassMix | null {

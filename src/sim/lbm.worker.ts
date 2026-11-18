@@ -8,13 +8,18 @@
  * the page keeps animating particles on the final field.
  */
 import { SIM } from '../rules/config';
-import { SettleDetector } from './classify';
+import { chiField, SettleDetector } from './classify';
 import { LbmSolver } from './lbm';
 import type { FromWorker, ToWorker } from './messages';
+import type { RasterGrid } from './types';
 
 const FRAME_INTERVAL_MS = 33;
+/** The chi field takes ~30 ms to compute, so it's refreshed less often than the velocity. */
+const CHI_INTERVAL_MS = 200;
 
 let solver: LbmSolver | null = null;
+let grid: RasterGrid | null = null;
+let lastChi = 0;
 let settle = new SettleDetector();
 let runId = 0;
 let running = false;
@@ -28,11 +33,17 @@ function post(msg: FromWorker, transfer: Transferable[] = []): void {
 }
 
 function sendFrame(): void {
-  if (!solver) return;
+  if (!solver || !grid) return;
   // Copy the arrays and *transfer* the copies: ownership moves to the page with no second copy.
   const ux = solver.ux.slice();
   const uy = solver.uy.slice();
-  post({ type: 'frame', runId, step: solver.stepCount, settled: settle.settled, running, ux, uy }, [ux.buffer, uy.buffer]);
+  const now = performance.now();
+  // Always include the chi field on a final frame (paused/settled) so the last picture is exact.
+  const chi = !running || now - lastChi >= CHI_INTERVAL_MS ? chiField(grid, ux, uy) : null;
+  if (chi) lastChi = now;
+  const transfer: Transferable[] = [ux.buffer, uy.buffer];
+  if (chi) transfer.push(chi.buffer);
+  post({ type: 'frame', runId, step: solver.stepCount, settled: settle.settled, running, ux, uy, chi }, transfer);
   lastFrame = performance.now();
 }
 
@@ -67,6 +78,8 @@ self.onmessage = (e: MessageEvent<ToWorker>) => {
   const msg = e.data;
   switch (msg.type) {
     case 'init':
+      grid = msg.grid;
+      lastChi = 0;
       solver = new LbmSolver(msg.grid, msg.params);
       settle = new SettleDetector();
       runId = msg.runId;
