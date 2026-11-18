@@ -98,7 +98,7 @@ Sim statistics are an *optional* input. Without them (e.g. the best-spot heatmap
 - **Balanced access:** for double or larger beds, ≥ 60 cm clear on both long sides. Warn if one side touches a wall. Bonus for matching nightstands on both sides.
 
 ### 2. Poison arrows (weight 15)
-- For each sharp convex corner (furniture flagged `sharpCorners`, protruding wall corners, columns), cast a ray along the corner's bisector. If it hits the bed (or a desk chair) within 250 cm, it's an issue. Severity scales with closeness.
+- For each sharp convex corner (furniture flagged `sharpCorners`, protruding wall corners, columns), cast rays across a cone around the corner's bisector (±30°, every 5°). If one hits the bed (or a desk chair) within 250 cm, it's an issue. Severity scales with closeness and with how directly it's aimed (off-centre rays count for less). Nightstands aren't sources (they sit beside the bed by design; their height has its own check).
 - Open bookshelves near the bed get a warning.
 - Nightstands taller than the mattress get a warning.
 - Fix suggestions: rotate or move the item, soften with a plant or rounded item between, or swap for closed storage.

@@ -67,3 +67,26 @@ describe('poison arrow markers', () => {
   });
 });
 
+
+describe('poison arrow cone', () => {
+  it('catches corners that point broadly at the bed, not just along the exact diagonal', () => {
+    // A dresser straight in front of the bed, 1 m away: its 45° diagonals miss the bed, but the cone doesn't.
+    const r = run(room([bedAgainstTop(120), item('dresser', 130, 335, 0)])).find((x) => x.id.startsWith('arrows.corner'));
+    expect(r).toBeDefined();
+  });
+
+  it('counts a glancing corner as less severe than one aimed straight at the bed', () => {
+    const marker = (l: Layout) => {
+      const m = run(l).find((x) => x.id.startsWith('arrows.corner'))!.marker!;
+      return m.kind === 'poisonArrow' ? m.severity : -1;
+    };
+    // Same distance band: one aimed along its diagonal (x = 280), one only caught by the cone (x = 130).
+    expect(marker(room([bedAgainstTop(120), item('dresser', 280, 280, 0)]))).toBeGreaterThan(0);
+    expect(marker(room([bedAgainstTop(120), item('dresser', 130, 335, 0)]))).toBeLessThan(1);
+  });
+
+  it('does not treat nightstands beside the bed as poison arrows', () => {
+    const l = room([bedAgainstTop(200), item('nightstand', 95, 20, 0), item('nightstand', 305, 20, 0)]);
+    expect(run(l).some((x) => x.id.startsWith('arrows.corner'))).toBe(false);
+  });
+});

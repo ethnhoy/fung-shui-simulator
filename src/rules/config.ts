@@ -143,6 +143,16 @@ export const RULES = {
   },
   arrows: {
     rangeCm: 250,
+    /**
+     * A corner "aims" across a cone around its bisector, not along one exact line:
+     * rays are cast every coneStepDeg up to ±coneHalfAngleDeg. Off-centre hits count
+     * for less (down to coneEdgeWeight at the edge of the cone).
+     */
+    coneHalfAngleDeg: 30,
+    coneStepDeg: 5,
+    coneEdgeWeight: 0.5,
+    /** Nightstands sit right beside the bed by design; their height has its own check instead. */
+    ignoreSourceTypes: ['nightstand'] as string[],
     /** Corners touching the target (closer than this) don't "aim" across space, so they're ignored. */
     minDistanceCm: 10,
     /** Closer than this is "bad" rather than "warn". */

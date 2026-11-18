@@ -29,7 +29,7 @@ interface Corner {
 function furnitureCorners(ctx: RuleContext): Corner[] {
   const out: Corner[] = [];
   for (const f of ctx.layout.furniture) {
-    if (!f.sharpCorners || f.type === 'bed' || f.type === 'rug') continue;
+    if (!f.sharpCorners || f.type === 'bed' || f.type === 'rug' || C.ignoreSourceTypes.includes(f.type)) continue;
     for (const [sx, sy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
       out.push({
         sourceId: f.id,
@@ -74,27 +74,39 @@ export function poisonArrowsRule(ctx: RuleContext): RuleResult[] {
   const hasDesk = ctx.layout.furniture.some((f) => f.type === 'desk');
   const targets = new Set(ctx.layout.furniture.filter((f) => f.type === 'bed' || (hasDesk && f.type === 'chair')).map((f) => f.id));
 
-  // Keep only the worst corner per source item, so one wardrobe gives one finding.
-  const worstBySource = new Map<string, { corner: Corner; dist: number; targetId: string; hitAt: Point }>();
+  // Each corner aims across a cone around its bisector. Keep the worst ray per corner,
+  // and the worst corner per source item, so one wardrobe gives one finding.
+  interface Hit { corner: Corner; dist: number; targetId: string; hitAt: Point; dir: Point; severity: number; aim: number }
+  const worstBySource = new Map<string, Hit>();
   for (const corner of [...furnitureCorners(ctx), ...protrudingWallCorners(ctx.poly)]) {
-    const origin = add(corner.at, scale(corner.dir, 0.5));
-    const hit = ctx.castRay(origin, corner.dir, C.rangeCm, corner.sourceId ? [corner.sourceId] : []);
-    if (hit.kind !== 'furniture' || !targets.has(hit.id) || hit.dist < C.minDistanceCm) continue;
-    const key = corner.sourceId ?? `wall-${corner.at.x}-${corner.at.y}`;
-    const prev = worstBySource.get(key);
-    if (!prev || hit.dist < prev.dist) worstBySource.set(key, { corner, dist: hit.dist, targetId: hit.id, hitAt: hit.point });
+    for (let off = -C.coneHalfAngleDeg; off <= C.coneHalfAngleDeg + 1e-9; off += C.coneStepDeg) {
+      const dir = rotate(corner.dir, off);
+      const origin = add(corner.at, scale(dir, 0.5));
+      const hit = ctx.castRay(origin, dir, C.rangeCm, corner.sourceId ? [corner.sourceId] : []);
+      if (hit.kind !== 'furniture' || !targets.has(hit.id) || hit.dist < C.minDistanceCm) continue;
+      // Closeness: 1 when touching, 0 at the edge of range. Aim: 1 dead centre, coneEdgeWeight at the cone's edge.
+      const closeness = 1 - (hit.dist - C.minDistanceCm) / (C.rangeCm - C.minDistanceCm);
+      const aim = 1 - (1 - C.coneEdgeWeight) * (Math.abs(off) / C.coneHalfAngleDeg);
+      const severity = closeness * aim;
+      const key = corner.sourceId ?? `wall-${corner.at.x}-${corner.at.y}`;
+      const prev = worstBySource.get(key);
+      if (!prev || severity > prev.severity) {
+        worstBySource.set(key, { corner, dist: hit.dist, targetId: hit.id, hitAt: hit.point, dir, severity, aim });
+      }
+    }
   }
 
-  for (const [key, { corner, dist, targetId, hitAt }] of worstBySource) {
-    // Severity scales linearly from maxPenalty (touching) to about a fifth of it (at the edge of range).
-    const closeness = 1 - (dist - C.minDistanceCm) / (C.rangeCm - C.minDistanceCm);
-    const impact = Math.min(-3, Math.round(C.maxPenalty * closeness));
+  for (const [key, { corner, dist, targetId, hitAt, dir, severity, aim }] of worstBySource) {
+    const closeness = severity;
+    // Penalty scales with how close and how directly the corner points (at least 3 points).
+    const impact = Math.min(-3, Math.round(C.maxPenalty * severity));
     const target = targetId === bed?.f.id ? 'the bed' : 'the desk chair';
     const sourceFurniture = corner.sourceId ? ctx.layout.furniture.find((f) => f.id === corner.sourceId) : undefined;
     out.push({
       id: `arrows.corner.${key}`,
       category: 'arrows',
-      status: dist < C.badWithinCm ? 'bad' : 'warn',
+      // Close and aimed fairly directly = bad; glancing or distant = a warning.
+      status: dist < C.badWithinCm && aim > 0.75 ? 'bad' : 'warn',
       scoreImpact: impact,
       message: `A sharp corner of the ${corner.name} points at ${target} (${Math.round(dist)} cm away)`,
       explanation: 'Sharp corners send out “poison arrows”, cutting lines of chi that feel aggressive when aimed at where you rest. Rotate or move the item, or soften the corner with a plant or something rounded.',
@@ -103,7 +115,7 @@ export function poisonArrowsRule(ctx: RuleContext): RuleResult[] {
         { kind: 'ray', from: corner.at, to: hitAt },
         ...(sourceFurniture ? [{ kind: 'outline' as const, points: rectCorners(sourceFurniture) }] : []),
       ],
-      fix: plantFix(corner.at, corner.dir, dist),
+      fix: plantFix(corner.at, dir, dist),
       marker: { kind: 'poisonArrow', from: corner.at, to: hitAt, severity: Math.max(0, Math.min(1, closeness)) },
     });
   }
