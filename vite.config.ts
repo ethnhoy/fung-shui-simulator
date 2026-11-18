@@ -1,9 +1,10 @@
 import { defineConfig } from 'vitest/config';
 
 // Vite builds and serves the app; Vitest (the test runner) reads the `test` section.
-export default defineConfig(({ command }) => ({
-  // GitHub Pages serves the site from /chi-flow/, so production builds need that prefix.
-  base: command === 'build' ? '/chi-flow/' : '/',
+export default defineConfig(({ command, isPreview }) => ({
+  // GitHub Pages serves the site from /chi-flow/, so the production build (and
+  // `npm run preview`, which serves that build) need that prefix. The dev server uses "/".
+  base: command === 'build' || isPreview ? '/chi-flow/' : '/',
   test: {
     include: ['tests/**/*.test.ts'],
   },

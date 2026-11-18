@@ -29,7 +29,7 @@ html, body {
 /* ---------- Layout: toolbar on top, palette | canvas | properties, status bar below ---------- */
 .app {
   display: grid;
-  grid-template-columns: 220px 1fr 280px;
+  grid-template-columns: 220px minmax(0, 1fr) 310px;
   grid-template-rows: auto 1fr auto;
   grid-template-areas:
     'toolbar toolbar toolbar'
@@ -122,10 +122,12 @@ input[type='text'], input[type='number'], select {
 
 /* ---------- Status bar & toasts ---------- */
 .statusbar {
+  display: flex; justify-content: space-between; gap: 16px;
   padding: 6px 14px; font-size: 12px; color: var(--ink-faint);
   background: var(--panel); border-top: 1px solid var(--panel-border);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+.statusbar span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.disclaimer-short { font-style: italic; }
 
 .toast {
   position: fixed; left: 50%; bottom: 44px; transform: translateX(-50%);
@@ -135,19 +137,6 @@ input[type='text'], input[type='number'], select {
 }
 .toast-error { background: var(--danger); }
 .toast-hide { opacity: 0; }
-
-/* ---------- Narrow screens (full responsive polish comes in M5) ---------- */
-@media (max-width: 900px) {
-  .app {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto 55vh auto auto auto;
-    grid-template-areas: 'toolbar' 'canvas' 'props' 'palette' 'status';
-    height: auto;
-  }
-  .toolbar { flex-wrap: wrap; }
-  .panel-left, .panel-right { border: 0; border-top: 1px solid var(--panel-border); }
-  .palette-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
-}
 
 /* ---------- Simulate mode ---------- */
 .flow-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
@@ -267,3 +256,54 @@ input[type='range'] { width: 100%; accent-color: var(--accent); }
 .compare-cats { list-style: none; padding: 0; margin: 0; font-size: 12.5px; }
 .compare-cats li { display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px dashed var(--panel-border); }
 @media (max-width: 700px) { .compare-grid { grid-template-columns: 1fr; } }
+
+/* ---------- About ---------- */
+.about { max-width: 640px; line-height: 1.55; font-size: 14px; }
+.about h3 { font-size: 13px; text-transform: none; letter-spacing: 0; color: var(--ink); margin: 16px 0 4px; }
+.about p, .about ul { margin: 0 0 8px; color: var(--ink-soft); }
+.about ul { padding-left: 20px; }
+.disclaimer {
+  margin-top: 16px !important; padding: 10px 12px; border-radius: var(--radius);
+  background: var(--accent-soft); color: var(--ink) !important; font-size: 13px;
+}
+
+/* ---------- Responsive layout ----------
+   Wide (≥1200px): three columns. Medium: slimmer side panels.
+   Narrow (<900px, tablets and phones): everything stacks, with the plan first. */
+@media (max-width: 1200px) {
+  .app { grid-template-columns: 190px minmax(0, 1fr) 280px; }
+  .palette-grid { grid-template-columns: 1fr; }
+  .toolbar { flex-wrap: wrap; row-gap: 6px; }
+  .brand { margin-right: 8px; }
+  .shortcuts { display: none; }
+}
+
+@media (max-width: 900px) {
+  .app {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(340px, 62vh) auto auto auto;
+    grid-template-areas: 'toolbar' 'canvas' 'props' 'palette' 'status';
+    height: auto;
+    min-height: 100vh;
+  }
+  .panel { overflow: visible; }
+  .panel-left, .panel-right { border: 0; border-top: 1px solid var(--panel-border); }
+  .palette-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+  .statusbar { justify-content: center; }
+  .statusbar span { white-space: normal; text-align: center; }
+}
+
+@media (max-width: 600px) {
+  .toolbar { padding: 8px 10px; gap: 5px; }
+  /* Brand and mode switch on the first row, actions on the second. */
+  .toolbar-spacer { flex-basis: 100%; height: 0; }
+  .toolbar-sep { display: none; }
+  .toolbar .btn { padding: 5px 8px; font-size: 13px; }
+  .app { grid-template-rows: auto minmax(300px, 55vh) auto auto auto; }
+  .panel { padding: 12px; }
+  .fix-bar { flex-wrap: wrap; border-radius: 14px; bottom: 8px; padding: 8px 10px; }
+  .fix-bar-text { flex-basis: 100%; }
+  .sim-banner { top: 6px; font-size: 12px; }
+  .modal { padding: 14px; }
+}
+.fix-bar-score { white-space: nowrap; }

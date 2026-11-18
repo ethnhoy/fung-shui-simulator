@@ -5,6 +5,8 @@ import type { Store } from '../editor/store';
 import type { UnitSystem } from '../geometry/units';
 import { sampleLayout } from '../model/sample';
 import { exportLayout, importLayoutFile } from '../storage/importExport';
+import { shareUrl } from '../storage/share';
+import { openAbout } from './about';
 import { h, toast } from './dom';
 
 export type AppMode = 'edit' | 'simulate';
@@ -16,7 +18,8 @@ interface ToolbarOptions {
   setMode: (m: AppMode) => void;
 }
 
-export function buildToolbar(root: HTMLElement, { store, getUnits, setUnits, setMode }: ToolbarOptions): void {
+/** Builds the toolbar. Returns a function to switch mode from code (e.g. ?mode=simulate in the URL). */
+export function buildToolbar(root: HTMLElement, { store, getUnits, setUnits, setMode }: ToolbarOptions): (m: AppMode) => void {
   const isMac = navigator.platform.toLowerCase().includes('mac');
   const mod = isMac ? '⌘' : 'Ctrl+';
 
@@ -87,6 +90,22 @@ export function buildToolbar(root: HTMLElement, { store, getUnits, setUnits, set
         toast('Loaded the sample bedroom. Press Undo to go back.');
       },
     }, 'Sample room'),
+    h('button', {
+      type: 'button', class: 'btn', title: 'Copy a link that opens this exact room',
+      onclick: async () => {
+        const url = shareUrl(store.layout);
+        try {
+          await navigator.clipboard.writeText(url);
+          toast('Share link copied to the clipboard.');
+        } catch {
+          // Clipboard access can be refused; fall back to a prompt the user can copy from.
+          window.prompt('Copy this link:', url);
+        }
+      },
+    }, 'Share'),
+    h('span', { class: 'toolbar-sep' }),
+    h('button', { type: 'button', class: 'btn', onclick: openAbout, title: 'What is this?' }, 'About'),
     fileInput,
   );
+  return selectMode;
 }

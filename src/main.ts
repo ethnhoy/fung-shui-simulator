@@ -19,10 +19,16 @@ import { FixPreview } from './report/fixPreview';
 import { buildReportPanel } from './report/reportPanel';
 import { capturePlan, openCompare } from './report/compare';
 import { BestSpotRunner } from './report/bestSpot';
+import { layoutFromHash } from './storage/share';
+import { toast } from './ui/dom';
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 
-const store = new Store(loadLayout());
+// A share link (#room=…) wins over the autosaved layout. Remove it from the address bar
+// afterwards so that further edits aren't confused with the shared version.
+const shared = layoutFromHash();
+if (shared) history.replaceState(null, '', location.pathname + location.search);
+const store = new Store(shared ?? loadLayout());
 const prefs = loadPrefs();
 const getUnits = (): UnitSystem => prefs.units;
 
@@ -116,7 +122,7 @@ function updateBanner(s: SimStatus): void {
 }
 sim.subscribe(updateBanner);
 
-buildToolbar($('toolbar'), {
+const selectMode = buildToolbar($('toolbar'), {
   store,
   getUnits,
   setUnits: (units) => {
@@ -127,6 +133,10 @@ buildToolbar($('toolbar'), {
   },
   setMode,
 });
+
+// Open straight into Simulate mode with ?mode=simulate (handy for demo links).
+if (new URLSearchParams(location.search).get('mode') === 'simulate') selectMode('simulate');
+if (shared) toast(`Opened a shared room: “${shared.name}”.`);
 
 // ---------------------------------------------------------------- Keyboard shortcuts
 
