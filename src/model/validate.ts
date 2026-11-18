@@ -28,7 +28,7 @@ const bool = (v: unknown, fallback: boolean): boolean => (typeof v === 'boolean'
 
 /** Parse unknown JSON into a valid Layout, or throw a LayoutError with a readable message. */
 export function parseLayout(data: unknown): Layout {
-  if (!isObj(data)) throw new LayoutError('File is not a Chi Flow layout (expected a JSON object).');
+  if (!isObj(data)) throw new LayoutError('File is not a Fung Shui layout (expected a JSON object).');
   if (data.version !== 1) throw new LayoutError(`Unsupported layout version: ${String(data.version)}.`);
   if (!isObj(data.room)) throw new LayoutError('Layout is missing "room".');
   if (!Array.isArray(data.openings) || !Array.isArray(data.furniture)) {

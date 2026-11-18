@@ -1,10 +1,10 @@
-# Chi Flow · feng shui bedroom simulator
+# Fung Shui · bedroom simulator
 
 Draw your bedroom, watch **chi flow through it like a wind tunnel**, and get a feng shui report that explains what's working, what isn't, and how to fix it, with one-click fixes.
 
 **[▶ Live demo](https://ethnhoy.github.io/fung-shui-simulator/)** · [Open straight into the simulation](https://ethnhoy.github.io/fung-shui-simulator/?mode=simulate)
 
-![Chi Flow in Simulate mode: particles stream from the door to the window, the floor is coloured by chi type, and the report scores the room](docs/screenshot-simulate.png)
+![Fung Shui in Simulate mode: particles stream from the door to the window, the floor is coloured by chi type, and the report scores the room](docs/screenshot-simulate.png)
 
 ## Features
 
@@ -25,7 +25,7 @@ Draw your bedroom, watch **chi flow through it like a wind tunnel**, and get a f
 
 ## How the simulation works
 
-Chi Flow uses the **Lattice Boltzmann method (LBM)**, a way of simulating fluids that's popular because it is simple and runs fast.
+Fung Shui uses the **Lattice Boltzmann method (LBM)**, a way of simulating fluids that's popular because it is simple and runs fast.
 
 1. **Grid.** The room becomes a grid of 5 cm cells, or 2.5 cm in high quality. Walls and solid furniture block flow. Plants and chairs are porous and slow it down. Rugs are ignored.
 2. **Nine directions per cell.** Each cell stores how much "fluid" is moving in each of 9 directions: staying still, 4 straight and 4 diagonal. This is called **D2Q9**.

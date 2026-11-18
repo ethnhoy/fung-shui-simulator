@@ -77,7 +77,7 @@ export function buildToolbar(root: HTMLElement, { store, getUnits, setUnits, set
 
   root.replaceChildren(
     // The logo is a seal stamp with 气 (chi), the way a painter signs their work.
-    h('div', { class: 'brand' }, h('span', { class: 'seal', 'aria-hidden': 'true' }, '气'), 'Chi Flow'),
+    h('div', { class: 'brand' }, h('span', { class: 'seal', 'aria-hidden': 'true' }, '气'), 'Fung Shui'),
     modeSwitch,
     h('div', { class: 'toolbar-spacer' }),
     undoBtn,

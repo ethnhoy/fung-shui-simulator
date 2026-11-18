@@ -1,4 +1,4 @@
-# CLAUDE.md — Chi Flow (Feng Shui Bedroom Simulator)
+# CLAUDE.md — Fung Shui (Feng Shui Bedroom Simulator)
 
 Claude Code reads this file at the start of every session. It holds the project's fixed decisions and the feng shui rule spec. If something here conflicts with a later request, ask before changing direction.
 

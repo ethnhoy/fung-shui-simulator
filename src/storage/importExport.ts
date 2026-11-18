@@ -11,7 +11,7 @@ export function exportLayout(layout: Layout): void {
   const a = document.createElement('a');
   a.href = url;
   const safeName = layout.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'bedroom';
-  a.download = `chi-flow-${safeName}.json`;
+  a.download = `fung-shui-${safeName}.json`;
   a.click();
   URL.revokeObjectURL(url);
 }

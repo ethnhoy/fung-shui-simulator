@@ -18,13 +18,13 @@ export function openAbout(): void {
   const closeBtn = h('button', { type: 'button', class: 'btn btn-small', onclick: close }, 'Close');
   const backdrop = h('div', { class: 'modal-backdrop', onclick: (e: Event) => e.target === backdrop && close() },
     h('div', { class: 'modal about', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'about-title' },
-      h('div', { class: 'modal-head' }, h('h2', { id: 'about-title' }, 'About Chi Flow'), closeBtn),
+      h('div', { class: 'modal-head' }, h('h2', { id: 'about-title' }, 'About Fung Shui'), closeBtn),
 
       h('h3', {}, 'What is feng shui?'),
       h('p', {},
         'Feng shui (“wind and water”) is a traditional Chinese practice of arranging spaces so that ',
         h('em', {}, 'chi'), ', life energy, flows gently through them. ',
-        'Chi Flow uses the Western (BTB, form school) approach: it looks at the shape of the room, ',
+        'Fung Shui uses the Western (BTB, form school) approach: it looks at the shape of the room, ',
         'where the door is, and how the furniture is arranged, rather than compass directions.'),
 
       h('h3', {}, 'How chi is modelled'),

@@ -8,6 +8,7 @@ import { sampleLayout } from '../model/sample';
 import type { Layout } from '../model/types';
 import { parseLayout } from '../model/validate';
 
+// Keys keep the app's original name (Chi Flow) so rooms saved before the rename still load.
 const LAYOUT_KEY = 'chiflow.layout.v1';
 const PREFS_KEY = 'chiflow.prefs.v1';
 
