@@ -1,19 +1,18 @@
 /**
- * Always-on problem markers: little pictures of what's wrong, drawn on the plan.
+ * Always-on problem markers on the plan.
  *
- *  - mirror beam: a shimmer of reflected light from the mirror to the bed
- *  - poison arrow: a red "blade" from a sharp corner, with a burst where it hits
- *  - coffin line: a dark strip from the foot of the bed out through the door
- *  - zone: a shaded problem area (door swing, open shelves)
- *
- * Each marker also gets a small badge (✕ or !) that shows the issue on hover
- * and opens it in the report when clicked. Only the badges listen to the
- * mouse, so markers never get in the way of dragging furniture.
+ *  - Mirror beams, poison arrows and the coffin line become streams of chi
+ *    particles (see markerStreams and the particle overlay).
+ *  - Areas (door swing into the bed, open shelves) are shaded zones.
+ *  - Every marker gets a small badge (✕ or !) that shows the issue on hover
+ *    and opens it in the report when clicked. Only the badges listen to the
+ *    mouse, so markers never get in the way of dragging furniture.
  */
 import Konva from 'konva';
 import type { Point } from '../model/types';
 import { add, normalize, scale, sub } from '../geometry/vec';
 import type { IssueMarker, RuleResult } from '../rules/types';
+import type { ChiStream } from '../sim/particles';
 
 export interface MarkerItem {
   id: string;
@@ -42,81 +41,31 @@ function anchorOf(m: IssueMarker): Point {
   }
 }
 
-/** Shapes that should animate (their dash pattern slides along). */
-export type Animated = Konva.Line[];
-
-function drawMirrorBeam(g: Konva.Group, m: Extract<IssueMarker, { kind: 'mirrorBeam' }>, animated: Animated): void {
-  const [a, b] = m.edge;
-  const far = scale(m.dir, m.length);
-  const mid = scale(add(a, b), 0.5);
-  // The beam: pale silver-blue, fading away from the mirror.
-  g.add(new Konva.Line({
-    points: flat([a, b, add(b, far), add(a, far)]), closed: true,
-    fillLinearGradientStartPoint: mid, fillLinearGradientEndPoint: add(mid, far),
-    fillLinearGradientColorStops: [0, 'rgba(120, 180, 210, 0.55)', 0.7, 'rgba(160, 205, 225, 0.25)', 1, 'rgba(190, 220, 235, 0.08)'],
-  }));
-  // A few glints running along the beam, like reflected light.
-  const across = sub(b, a);
-  for (const t of [0.2, 0.5, 0.8]) {
-    const start = add(a, scale(across, t));
-    const line = new Konva.Line({
-      points: flat([start, add(start, far)]), stroke: 'rgba(255, 255, 255, 0.9)', strokeWidth: 1.6, ...crisp,
-      dash: [3, 14], lineCap: 'round',
-    });
-    animated.push(line);
-    g.add(line);
-  }
-  // Soft edges of the beam.
-  for (const p of [a, b]) {
-    g.add(new Konva.Line({ points: flat([p, add(p, far)]), stroke: 'rgba(80, 140, 170, 0.55)', strokeWidth: 1, ...crisp, dash: [4, 4] }));
-  }
-  // A highlight on the mirror itself.
-  g.add(new Konva.Line({ points: flat([a, b]), stroke: '#ffffff', strokeWidth: 3, ...crisp, lineCap: 'round', opacity: 0.9 }));
-}
-
-function drawPoisonArrow(g: Konva.Group, m: Extract<IssueMarker, { kind: 'poisonArrow' }>, colour: string, px: number, animated: Animated): void {
-  const dir = normalize(sub(m.to, m.from));
-  const side = { x: -dir.y, y: dir.x };
-  const len = Math.hypot(m.to.x - m.from.x, m.to.y - m.from.y);
-  // The blade: a thin wedge, sharp at the corner and widening towards the target.
-  const half = Math.max(4 * px, len * 0.06);
-  g.add(new Konva.Line({
-    points: flat([m.from, add(m.to, scale(side, half)), add(m.to, scale(side, -half))]), closed: true,
-    fillLinearGradientStartPoint: m.from, fillLinearGradientEndPoint: m.to,
-    fillLinearGradientColorStops: [0, colour + '10', 1, colour + '40'],
-  }));
-  // The arrow itself: dashes that slide towards the target. Closer corners are bolder.
-  const arrow = new Konva.Arrow({
-    points: flat([m.from, m.to]), stroke: colour, fill: colour, ...crisp,
-    strokeWidth: 1.8 + 1.8 * m.severity, dash: [10, 6], lineCap: 'round',
-    pointerLength: 9 * px, pointerWidth: 9 * px, opacity: 0.6 + 0.4 * m.severity,
-  });
-  animated.push(arrow);
-  g.add(arrow);
-  // Impact burst where it hits.
-  g.add(new Konva.Star({
-    x: m.to.x, y: m.to.y, numPoints: 7, innerRadius: 3 * px, outerRadius: (7 + 5 * m.severity) * px,
-    fill: colour, opacity: 0.75,
-  }));
-}
-
-function drawCoffin(g: Konva.Group, m: Extract<IssueMarker, { kind: 'coffin' }>, colour: string, px: number, animated: Animated): void {
-  g.add(new Konva.Line({
-    points: flat(m.strip), closed: true, fill: 'rgba(58, 45, 40, 0.12)',
-    stroke: 'rgba(58, 45, 40, 0.55)', strokeWidth: 1.2, ...crisp, dash: [6, 4],
-  }));
-  const arrow = new Konva.Arrow({
-    points: flat([m.from, m.to]), stroke: colour, fill: colour, strokeWidth: 2, ...crisp,
-    dash: [8, 8], pointerLength: 9 * px, pointerWidth: 9 * px, opacity: 0.85,
-  });
-  animated.push(arrow);
-  g.add(arrow);
-}
-
 function drawZone(g: Konva.Group, m: Extract<IssueMarker, { kind: 'zone' }>, colour: string): void {
   g.add(new Konva.Line({
     points: flat(m.points), closed: true, fill: colour + '26', stroke: colour, strokeWidth: 1.8, ...crisp, dash: [6, 4],
   }));
+}
+
+/**
+ * Mirror beams, poison arrows and the coffin line are drawn as streams of chi
+ * particles by the particle overlay. This turns markers into those streams.
+ */
+export function markerStreams(items: MarkerItem[]): ChiStream[] {
+  const streams: ChiStream[] = [];
+  for (const { id, marker: m } of items) {
+    if (m.kind === 'mirrorBeam') {
+      streams.push({ id, kind: 'mirror', fromA: m.edge[0], fromB: m.edge[1], dir: m.dir, length: m.length, severity: 1 });
+    } else if (m.kind === 'poisonArrow') {
+      const length = Math.hypot(m.to.x - m.from.x, m.to.y - m.from.y);
+      streams.push({ id, kind: 'arrow', fromA: m.from, fromB: m.from, dir: normalize(sub(m.to, m.from)), length, severity: m.severity });
+    } else if (m.kind === 'coffin') {
+      // Chi drains from the whole foot of the bed: start across the strip's foot edge.
+      const length = Math.hypot(m.to.x - m.from.x, m.to.y - m.from.y);
+      streams.push({ id, kind: 'coffin', fromA: m.strip[0], fromB: m.strip[3], dir: normalize(sub(m.to, m.from)), length, severity: 1 });
+    }
+  }
+  return streams;
 }
 
 /** A small round badge with an icon; shows the message on hover and reports clicks. */
@@ -153,23 +102,17 @@ function drawBadge(
   return badge;
 }
 
-/** Build all markers. Returns the group (in room cm) and the shapes to animate. */
+/** Build the badges (for every marker) and the shaded zones. Returns a group in room cm. */
 export function drawMarkers(
   items: MarkerItem[], px: number, tooltip: Konva.Label, onClick: (id: string) => void,
-): { group: Konva.Group; animated: Animated } {
+): Konva.Group {
   const group = new Konva.Group();
-  const shapes = new Konva.Group({ listening: false });
+  const zones = new Konva.Group({ listening: false });
   const badges = new Konva.Group();
-  const animated: Animated = [];
-  group.add(shapes, badges);
+  group.add(zones, badges);
   for (const item of items) {
-    const colour = COLOUR[item.status === 'bad' ? 'bad' : 'warn'];
-    const m = item.marker;
-    if (m.kind === 'mirrorBeam') drawMirrorBeam(shapes, m, animated);
-    else if (m.kind === 'poisonArrow') drawPoisonArrow(shapes, m, colour, px, animated);
-    else if (m.kind === 'coffin') drawCoffin(shapes, m, colour, px, animated);
-    else drawZone(shapes, m, colour);
-    badges.add(drawBadge(item, anchorOf(m), px, tooltip, onClick));
+    if (item.marker.kind === 'zone') drawZone(zones, item.marker, COLOUR[item.status === 'bad' ? 'bad' : 'warn']);
+    badges.add(drawBadge(item, anchorOf(item.marker), px, tooltip, onClick));
   }
-  return { group, animated };
+  return group;
 }

@@ -12,6 +12,8 @@ import { buildPalette } from './ui/palette';
 import { buildProperties } from './ui/properties';
 import { buildToolbar, type AppMode } from './ui/toolbar';
 import { SimController, type SimStatus } from './sim/controller';
+import { ParticleOverlay } from './sim/particleOverlay';
+import { markerStreams } from './editor/markers';
 import { buildSimPanel } from './ui/simPanel';
 import { buildScoreCard } from './ui/scoreCard';
 import { ReportModel } from './report/reportModel';
@@ -39,7 +41,9 @@ buildPalette($('palette'), store);
 const refreshProperties = buildProperties($('properties'), store, getUnits);
 // ---------------------------------------------------------------- Simulate mode
 
-const sim = new SimController($<HTMLCanvasElement>('flow-canvas'), store, () => editor.getView());
+// One particle layer on top of the plan: flow particles in Simulate mode, problem streams in both modes.
+const overlay = new ParticleOverlay($<HTMLCanvasElement>('particle-canvas'), () => editor.getView());
+const sim = new SimController($<HTMLCanvasElement>('flow-canvas'), store, () => editor.getView(), overlay);
 buildSimPanel($('sim-panel'), sim);
 
 // ---------------------------------------------------------------- Report
@@ -47,7 +51,7 @@ buildSimPanel($('sim-panel'), sim);
 const reportModel = new ReportModel(store, sim);
 buildScoreCard($('score-card'), reportModel);
 const fixPreview = new FixPreview($('fix-bar'), editor, store, reportModel);
-const plan = () => capturePlan(editor, $<HTMLCanvasElement>('flow-canvas'));
+const plan = () => capturePlan(editor, $<HTMLCanvasElement>('flow-canvas'), $<HTMLCanvasElement>('particle-canvas'));
 const reportPanel = buildReportPanel($('report-panel'), {
   store,
   editor,
@@ -71,6 +75,7 @@ function refreshMarkers(): void {
         .map((r) => ({ id: r.id, status: r.status, message: r.message, marker: r.marker! }))
     : [];
   editor.setMarkers(items);
+  overlay.setStreams(markerStreams(items));
 }
 reportModel.subscribe(refreshMarkers);
 refreshMarkers();
@@ -201,5 +206,5 @@ window.addEventListener('keydown', (e) => {
 // Development only: expose the main objects in the browser console for debugging.
 // (Vite strips this block out of production builds because import.meta.env.DEV is false there.)
 if (import.meta.env.DEV) {
-  Object.assign(window, { chi: { store, editor, sim, reportModel } });
+  Object.assign(window, { chi: { store, editor, sim, reportModel, overlay } });
 }

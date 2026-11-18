@@ -1,16 +1,17 @@
 /**
  * The SimController connects everything in Simulate mode:
  *   Layout ─rasterise→ grid ─postMessage→ worker (LBM) ─frames→ classify/stats
- *                                                          └→ particles → renderer
- * It also owns the animation loop (requestAnimationFrame, which the browser
+ *                                                          └→ particle overlay
+ * It also owns the heatmap's animation loop (requestAnimationFrame, which the browser
  * calls once per screen refresh) and re-runs the simulation when the layout changes.
+ * Particles live in the shared ParticleOverlay, which also draws problem streams in Edit mode.
  */
 import type { Store } from '../editor/store';
 import { roomPolygon } from '../geometry/room';
 import { FLOW_VIEW, SIM } from '../rules/config';
 import { classifyChi, computeStats } from './classify';
 import type { FromWorker, ToWorker } from './messages';
-import { ParticleSystem } from './particles';
+import type { ParticleOverlay } from './particleOverlay';
 import { rasterise, type Quality } from './rasterise';
 import { FlowRenderer, type RenderOptions, type ViewTransform } from './renderer';
 import type { FlowMode, RasterGrid, SimStats } from './types';
@@ -30,7 +31,6 @@ const RERUN_DELAY_MS = 300;
 export class SimController {
   private worker: Worker | null = null;
   private renderer: FlowRenderer;
-  private particles = new ParticleSystem();
   private grid: RasterGrid | null = null;
   private field: { ux: Float32Array; uy: Float32Array } | null = null;
   private runId = 0;
@@ -49,6 +49,7 @@ export class SimController {
     canvas: HTMLCanvasElement,
     private store: Store,
     private getView: () => ViewTransform,
+    private overlay: ParticleOverlay,
   ) {
     this.renderer = new FlowRenderer(canvas);
     // Changing the layout while simulating re-runs the simulation (after a short pause, so typing doesn't thrash it).
@@ -87,6 +88,9 @@ export class SimController {
     this.send({ type: 'pause' });
     cancelAnimationFrame(this.rafId);
     this.renderer.clear();
+    // Back to Edit mode: no flow particles, but problem streams keep playing.
+    this.overlay.setGrid(null);
+    this.overlay.playing = true;
     this.setStatus({ active: false, running: false });
   }
 
@@ -97,13 +101,15 @@ export class SimController {
     this.grid = grid;
     this.field = null;
     this.runId++;
-    this.particles.setGrid(grid);
     this.setStatus({ mode: grid.mode, step: 0, settled: false, unstable: false, stats: null, running: false });
 
     if (grid.mode === 'doorClosed' || grid.mode === 'noDoor') {
+      this.overlay.setGrid(null);
       this.send({ type: 'pause' });
       return; // nothing can flow; the UI shows a message instead
     }
+    this.overlay.setGrid(grid);
+    this.overlay.playing = this.playing;
     const q = SIM.quality[this.quality];
     // Note: the grid's typed arrays are *copied* into the worker here (structured clone).
     this.send({
@@ -126,12 +132,14 @@ export class SimController {
 
   play(): void {
     this.playing = true;
+    this.overlay.playing = true;
     this.send({ type: 'play' });
     this.setStatus({});
   }
 
   pause(): void {
     this.playing = false;
+    this.overlay.playing = false;
     this.send({ type: 'pause' });
     this.setStatus({});
   }
@@ -140,16 +148,17 @@ export class SimController {
   stepOnce(): void {
     this.pause();
     this.send({ type: 'step', steps: Math.round(FLOW_VIEW.stepsPerFrame * 4) });
-    this.particles.update(FLOW_VIEW.stepsPerFrame * 4);
+    this.overlay.stepOnce();
   }
 
   reset(): void {
-    this.particles.clear();
+    this.overlay.particles.clearFlow();
     this.restart();
   }
 
   setSpeed(speed: number): void {
     this.speed = speed;
+    this.overlay.speed = speed;
     this.send({ type: 'speed', stepsPerBatch: this.batchSize() });
   }
 
@@ -160,6 +169,7 @@ export class SimController {
 
   setOptions(patch: Partial<RenderOptions>): void {
     this.options = { ...this.options, ...patch };
+    this.overlay.showFlowParticles = this.options.particles;
   }
 
   /** Higher quality has 4× the cells, so run fewer steps per batch to keep the page responsive. */
@@ -181,7 +191,7 @@ export class SimController {
       return;
     }
     this.field = { ux: msg.ux, uy: msg.uy };
-    this.particles.setField(msg.ux, msg.uy);
+    this.overlay.setField(msg.ux, msg.uy);
 
     // The chi field (flow spread into the room) arrives a few times a second.
     // Classes, the heatmap and the statistics are all derived from it.
@@ -189,7 +199,7 @@ export class SimController {
     if (msg.chi) {
       const classes = classifyChi(this.grid, msg.chi);
       this.renderer.setChi(msg.chi, classes);
-      this.particles.setChi(msg.chi);
+      this.overlay.setChi(msg.chi);
       stats = computeStats(this.grid, classes, msg.step, msg.settled);
     }
     this.setStatus({ step: msg.step, settled: msg.settled, running: msg.running, stats });
@@ -204,13 +214,11 @@ export class SimController {
 
   private loop = (): void => {
     if (!this.status.active) return;
-    if (this.playing && this.field) this.particles.update(FLOW_VIEW.stepsPerFrame * this.speed);
     const flowing = this.status.mode === 'normal' || this.status.mode === 'split';
     this.renderer.draw(
       flowing ? this.grid : null,
       this.getView(),
       roomPolygon(this.store.layout.room),
-      flowing ? this.particles.particles : [],
       this.field,
       this.options,
     );

@@ -143,6 +143,7 @@ If a desk exists, check its commanding position (can see the door, back not to t
 
 ## Report and UX rules
 - The report has three sections: **What's working**, **Issues** (sorted by severity) and **How to improve**.
+- Problems with a `marker` (poison arrows, mirrors, coffin line) are always shown on the plan as particle streams in the shared particle overlay (both modes), plus a clickable badge; area problems are shaded zones. In Simulate mode streams are fed by the local chi level, flow particles near a sharp corner/mirror can be caught into the stream, and stream particles rejoin the flow at the bed. Toggle: "Show problems on the plan".
 - Clicking an issue highlights the cause on the plan: the offending ray, corner, mirror line or bed outline.
 - "Try this fix" previews the change as a ghost and applies it on confirm (undoable).
 - **Best spot heatmap:** while dragging the bed (or desk), shade the floor by the rule score that position would get. Compute it on a coarse grid with rules only, no sim, so it stays fast.

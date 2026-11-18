@@ -7,8 +7,8 @@ import type { Report } from '../rules/types';
 import { h } from '../ui/dom';
 import type { ReportModel } from './reportModel';
 
-/** Picture of the plan: the flow canvas (if showing) with the editor drawn on top. */
-export function capturePlan(editor: Editor, flowCanvas: HTMLCanvasElement): string {
+/** Picture of the plan: the flow canvas (if showing), the editor on top, then the particles. */
+export function capturePlan(editor: Editor, flowCanvas: HTMLCanvasElement, particleCanvas?: HTMLCanvasElement): string {
   const plan = editor.toCanvas();
   const out = document.createElement('canvas');
   out.width = plan.width;
@@ -19,6 +19,7 @@ export function capturePlan(editor: Editor, flowCanvas: HTMLCanvasElement): stri
   // The flow canvas is drawn at device resolution; scale it to the editor's size.
   if (flowCanvas.width > 0) ctx.drawImage(flowCanvas, 0, 0, out.width, out.height);
   ctx.drawImage(plan, 0, 0);
+  if (particleCanvas && particleCanvas.width > 0) ctx.drawImage(particleCanvas, 0, 0, out.width, out.height);
   return out.toDataURL('image/png');
 }
 

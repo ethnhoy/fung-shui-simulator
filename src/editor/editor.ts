@@ -17,7 +17,7 @@ import type { UnitSystem } from '../geometry/units';
 import { THEME } from '../ui/theme';
 import { drawFurniture, drawOpening, drawRoom } from './draw';
 import { drawBagua, drawBestSpot, drawGhost, drawHighlight } from './overlays';
-import { drawMarkers, type Animated, type MarkerItem } from './markers';
+import { drawMarkers, type MarkerItem } from './markers';
 import type { Store } from './store';
 import type { HighlightShape, Status } from '../rules/types';
 import type { LayoutDiff } from '../report/diff';
@@ -53,16 +53,11 @@ export class Editor {
   private spot: { cells: SpotCell[]; step: number; done: boolean; id: string } | null = null;
   private bagua: BaguaZone[] | null = null;
 
-  /**
-   * Problem markers live on their own layer on top, so their animation
-   * (sliding dashes) only redraws that layer, not the whole plan.
-   */
+  /** Problem badges and zones live on their own layer on top of everything else. */
   private markerLayer = new Konva.Layer();
   private markerWorld = new Konva.Group();
   private markerTooltip = new Konva.Label({ listening: false, visible: false });
   private markers: MarkerItem[] = [];
-  private markerAnimated: Animated = [];
-  private markerAnimation: Konva.Animation;
   /** Called when a problem marker's badge is clicked. */
   onMarkerClick: (resultId: string) => void = () => {};
 
@@ -120,11 +115,6 @@ export class Editor {
     this.markerTooltip.add(new Konva.Text({ text: '', fill: '#fff', padding: 6, fontSize: 12 }));
     this.markerLayer.add(this.markerWorld, this.markerTooltip);
     this.stage.add(this.markerLayer);
-    // Slide the dashes of animated markers along, about 20 px per second.
-    this.markerAnimation = new Konva.Animation((frame) => {
-      const offset = -((frame?.time ?? 0) / 50);
-      for (const shape of this.markerAnimated) shape.dashOffset(offset);
-    }, this.markerLayer);
 
     this.bindStageEvents();
     this.store.subscribe((kind) => {
@@ -176,12 +166,7 @@ export class Editor {
   private drawMarkers(): void {
     this.markerWorld.destroyChildren();
     this.markerTooltip.visible(false);
-    const { group, animated } = drawMarkers(this.markers, this.px, this.markerTooltip, (id) => this.onMarkerClick(id));
-    this.markerWorld.add(group);
-    this.markerAnimated = animated;
-    // Only run the animation loop while something is animating.
-    if (animated.length) this.markerAnimation.start();
-    else this.markerAnimation.stop();
+    this.markerWorld.add(drawMarkers(this.markers, this.px, this.markerTooltip, (id) => this.onMarkerClick(id)));
     this.markerLayer.batchDraw();
   }
 

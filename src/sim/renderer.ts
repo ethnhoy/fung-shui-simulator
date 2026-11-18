@@ -9,7 +9,6 @@
 import type { Point } from '../model/types';
 import { SIM } from '../rules/config';
 import { CLASS_CODE } from './classify';
-import type { Particle } from './particles';
 import type { ChiClass, RasterGrid } from './types';
 
 /** Screen transform of the editor's world: screen = origin + room_cm × scale. */
@@ -64,11 +63,11 @@ export function chiCssGradient(): string {
 }
 
 /** Particles are drawn in a handful of colour bands (one canvas path per band keeps drawing fast). */
-const PARTICLE_BANDS = [0.04, 0.15, 0.3, 0.5, 0.7, 0.9, 1.0].map((l) => {
+export const PARTICLE_BANDS = [0.04, 0.15, 0.3, 0.5, 0.7, 0.9, 1.0].map((l) => {
   const [r, g, b] = chiRgb(l);
   return { upTo: l, css: `rgb(${r},${g},${b})` };
 });
-const bandOf = (level: number) => {
+export const bandOf = (level: number) => {
   for (let i = 0; i < PARTICLE_BANDS.length - 1; i++) if (level < (PARTICLE_BANDS[i].upTo + PARTICLE_BANDS[i + 1].upTo) / 2) return i;
   return PARTICLE_BANDS.length - 1;
 };
@@ -148,7 +147,6 @@ export class FlowRenderer {
     grid: RasterGrid | null,
     view: ViewTransform,
     roomPoly: Point[],
-    particles: Particle[],
     field: { ux: Float32Array; uy: Float32Array } | null,
     opts: RenderOptions,
   ): void {
@@ -168,7 +166,6 @@ export class FlowRenderer {
 
     if (grid && opts.heatmap && this.classes && this.chi) this.drawHeatmap(grid, view);
     if (grid && opts.arrows && field) this.drawArrows(grid, field, view.scale);
-    if (opts.particles) this.drawParticles(particles, view.scale);
     ctx.restore();
   }
 
@@ -272,44 +269,6 @@ export class FlowRenderer {
     ctx.stroke();
   }
 
-  private drawParticles(particles: Particle[], scale: number): void {
-    const ctx = this.ctx;
-    ctx.lineCap = 'round';
-    ctx.lineWidth = 1.6 / scale;
-    // Sort particles into colour bands once per frame.
-    const bands = PARTICLE_BANDS.map(() => [] as Particle[]);
-    for (const p of particles) bands[bandOf(p.level)].push(p);
-    // Trails fade towards the tail. Drawing one path per (fade level, colour band)
-    // instead of one per segment keeps this to a few dozen canvas calls a frame.
-    const levels = Math.max(1, ...particles.map((p) => p.trail.length));
-    for (let level = 1; level < levels; level++) {
-      ctx.globalAlpha = (level / levels) * 0.7;
-      bands.forEach((band, b) => {
-        if (!band.length) return;
-        ctx.strokeStyle = PARTICLE_BANDS[b].css;
-        ctx.beginPath();
-        for (const p of band) {
-          // Align trails on their newest point so every particle's head is at the brightest level.
-          const i = p.trail.length - levels + level;
-          if (i < 1) continue;
-          ctx.moveTo(p.trail[i - 1].x, p.trail[i - 1].y);
-          ctx.lineTo(p.trail[i].x, p.trail[i].y);
-        }
-        ctx.stroke();
-      });
-    }
-    ctx.globalAlpha = 0.95;
-    bands.forEach((band, b) => {
-      if (!band.length) return;
-      ctx.fillStyle = PARTICLE_BANDS[b].css;
-      ctx.beginPath();
-      for (const p of band) {
-        ctx.moveTo(p.x + 2.2 / scale, p.y);
-        ctx.arc(p.x, p.y, 2.2 / scale, 0, Math.PI * 2);
-      }
-      ctx.fill();
-    });
-    ctx.globalAlpha = 1;
-  }
+
 
 }
