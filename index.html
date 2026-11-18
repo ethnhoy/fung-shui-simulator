@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Chi Flow: draw your bedroom, watch chi flow like a wind tunnel, and get a Western feng shui report." />
+    <title>Chi Flow · Feng Shui Bedroom Simulator</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='44' fill='%23c06a45'/><path d='M50 6a44 44 0 0 1 0 88a22 22 0 0 1 0-44a22 22 0 0 0 0-44z' fill='%23f6f1ea'/></svg>" />
+  </head>
+  <body>
+    <div class="app">
+      <header id="toolbar" class="toolbar"></header>
+      <aside id="palette" class="panel panel-left" aria-label="Furniture palette"></aside>
+      <main class="canvas-area">
+        <div id="canvas-host" class="canvas-host"></div>
+      </main>
+      <aside id="properties" class="panel panel-right" aria-label="Properties"></aside>
+      <footer class="statusbar">
+        Drag to move · Shift while dragging = no snapping · R rotate · ⌫ delete · ⌘/Ctrl+D duplicate · Arrows nudge · Esc deselect
+      </footer>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,150 @@
+/* Chi Flow styles: calm, warm, minimal. Colours are CSS variables so they're defined in one place. */
+:root {
+  --bg: #f6f1ea;
+  --panel: #fffaf3;
+  --panel-border: #e7ddcf;
+  --ink: #3a3530;
+  --ink-soft: #6b625a;
+  --ink-faint: #9a9087;
+  --accent: #c06a45;
+  --accent-soft: #f3e1d6;
+  --danger: #a8432c;
+  --input-bg: #ffffff;
+  --radius: 8px;
+  --font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 14px;
+}
+
+/* ---------- Layout: toolbar on top, palette | canvas | properties, status bar below ---------- */
+.app {
+  display: grid;
+  grid-template-columns: 220px 1fr 280px;
+  grid-template-rows: auto 1fr auto;
+  grid-template-areas:
+    'toolbar toolbar toolbar'
+    'palette canvas props'
+    'status status status';
+  height: 100vh;
+}
+.toolbar { grid-area: toolbar; }
+.panel-left { grid-area: palette; border-right: 1px solid var(--panel-border); }
+.canvas-area { grid-area: canvas; position: relative; min-width: 0; min-height: 0; }
+.panel-right { grid-area: props; border-left: 1px solid var(--panel-border); }
+.statusbar { grid-area: status; }
+
+.canvas-host { position: absolute; inset: 0; }
+
+/* ---------- Toolbar ---------- */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--panel-border);
+}
+.brand { display: flex; align-items: center; gap: 8px; font-weight: 650; font-size: 16px; margin-right: 18px; letter-spacing: 0.2px; }
+.brand-mark { color: var(--accent); font-size: 20px; }
+.toolbar-spacer { flex: 1; }
+.toolbar-sep { width: 1px; height: 22px; background: var(--panel-border); margin: 0 4px; }
+
+.mode-switch { display: inline-flex; background: var(--bg); border-radius: 999px; padding: 3px; border: 1px solid var(--panel-border); }
+.mode { border: 0; background: transparent; padding: 5px 14px; border-radius: 999px; font: inherit; color: var(--ink-soft); cursor: pointer; }
+.mode.active { background: var(--panel); color: var(--ink); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08); font-weight: 600; }
+.mode:disabled { cursor: not-allowed; opacity: 0.55; }
+
+/* ---------- Buttons ---------- */
+.btn {
+  font: inherit;
+  padding: 6px 11px;
+  border-radius: var(--radius);
+  border: 1px solid var(--panel-border);
+  background: var(--input-bg);
+  color: var(--ink);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn:hover:not(:disabled) { border-color: var(--accent); }
+.btn:disabled { opacity: 0.45; cursor: default; }
+.btn:focus-visible, .palette-item:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.btn-small { padding: 4px 8px; font-size: 12px; }
+.btn-danger { color: var(--danger); }
+.btn-danger:hover:not(:disabled) { border-color: var(--danger); background: #fbeeea; }
+
+/* ---------- Side panels ---------- */
+.panel { background: var(--panel); padding: 14px; overflow-y: auto; }
+.panel-title { font-size: 15px; margin: 0 0 12px; font-weight: 650; }
+.panel h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--ink-faint); margin: 14px 0 8px; font-weight: 600; }
+.hint { color: var(--ink-faint); font-size: 12px; line-height: 1.45; margin: 14px 0 0; }
+
+.palette-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.palette-item {
+  display: flex; align-items: center; gap: 7px;
+  font: inherit; font-size: 12.5px; text-align: left;
+  padding: 7px 8px; border-radius: var(--radius);
+  border: 1px solid var(--panel-border); background: var(--input-bg); color: var(--ink);
+  cursor: pointer;
+}
+.palette-item:hover { border-color: var(--accent); background: var(--accent-soft); }
+.swatch { width: 14px; height: 14px; border-radius: 3px; flex: none; border: 1px solid rgba(0, 0, 0, 0.15); }
+.swatch-round { border-radius: 50%; }
+
+/* ---------- Form fields ---------- */
+.field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; min-width: 0; }
+.field-label { font-size: 12px; color: var(--ink-soft); }
+.field-hint { font-size: 11.5px; color: var(--ink-faint); }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.subsection { border-top: 1px solid var(--panel-border); margin-top: 6px; padding-top: 2px; }
+
+input[type='text'], input[type='number'], select {
+  font: inherit; width: 100%; min-width: 0;
+  padding: 6px 8px; border-radius: 6px;
+  border: 1px solid var(--panel-border); background: var(--input-bg); color: var(--ink);
+}
+.input-unit { display: flex; align-items: center; gap: 4px; }
+.input-unit span { color: var(--ink-faint); font-size: 12px; }
+.rotate-row { display: flex; gap: 4px; align-items: center; }
+.rotate-row .input-unit { flex: 1; }
+.checkbox { display: flex; gap: 8px; align-items: flex-start; margin: 8px 0; font-size: 13px; cursor: pointer; }
+.checkbox input { margin-top: 2px; accent-color: var(--accent); }
+.button-row { display: flex; gap: 8px; margin-top: 14px; }
+
+/* ---------- Status bar & toasts ---------- */
+.statusbar {
+  padding: 6px 14px; font-size: 12px; color: var(--ink-faint);
+  background: var(--panel); border-top: 1px solid var(--panel-border);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.toast {
+  position: fixed; left: 50%; bottom: 44px; transform: translateX(-50%);
+  background: var(--ink); color: #fff; padding: 9px 16px; border-radius: 999px;
+  font-size: 13px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  transition: opacity 0.4s; z-index: 10;
+}
+.toast-error { background: var(--danger); }
+.toast-hide { opacity: 0; }
+
+/* ---------- Narrow screens (full responsive polish comes in M5) ---------- */
+@media (max-width: 900px) {
+  .app {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 55vh auto auto auto;
+    grid-template-areas: 'toolbar' 'canvas' 'props' 'palette' 'status';
+    height: auto;
+  }
+  .toolbar { flex-wrap: wrap; }
+  .panel-left, .panel-right { border: 0; border-top: 1px solid var(--panel-border); }
+  .palette-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+}
