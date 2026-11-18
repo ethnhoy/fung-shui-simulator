@@ -84,6 +84,7 @@ Rules must not depend on the renderer. The sim and the rule engine both read the
 ## Rule engine spec (Western bedroom feng shui)
 Each rule returns `{ id, status: good|warn|bad, scoreImpact, message, explanation, highlight: shapes[], fix?: SuggestedFix }`.
 All thresholds and weights live in `rules/config.ts`. Write tests for every rule.
+Results also have a `category`, and a fourth status, `info`, for tips (always 0 impact). Each category starts at 100, adds its results' `scoreImpact` (penalties are negative, bonuses positive) and is clamped to 0..100. Fixes are `{ label, apply(layout) => layout }`.
 Sim statistics are an *optional* input. Without them (e.g. the best-spot heatmap), the sim-based checks in rule 4 score neutral and only the geometric checks (like the straight-line rush) run.
 
 ### 1. Bed: commanding position (weight 35)

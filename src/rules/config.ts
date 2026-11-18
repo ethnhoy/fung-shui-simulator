@@ -49,6 +49,139 @@ export const SIM = {
   },
 };
 
+/** Category weights for the overall score (they add up to 100). */
+export const WEIGHTS = {
+  bed: 35,
+  arrows: 15,
+  mirrors: 10,
+  flow: 20,
+  clutter: 10,
+  elements: 10,
+  bagua: 0, // information only in v1
+} as const;
+
+export const CATEGORY_LABELS = {
+  bed: 'Bed position',
+  arrows: 'Poison arrows',
+  mirrors: 'Mirrors',
+  flow: 'Chi flow',
+  clutter: 'Clutter & clearance',
+  elements: 'Elements & yin/yang',
+  bagua: 'Bagua map',
+} as const;
+
+/** Score labels: at least this score earns the label. */
+export const SCORE_LABELS = [
+  { min: 85, label: 'Harmonious' },
+  { min: 70, label: 'Good' },
+  { min: 50, label: 'Needs attention' },
+  { min: 0, label: 'Unsettled' },
+] as const;
+
+/**
+ * Rule thresholds and penalties. Penalties are points taken off the
+ * rule's *category* (each category starts at 100), not the overall score.
+ */
+export const RULES = {
+  bed: {
+    /** Pillow point: this far in from the head end, along the bed's centre line. */
+    pillowInsetCm: 30,
+    /** The door must be within this total field of view from the pillow (±80°). */
+    fieldOfViewDeg: 160,
+    /** The head end counts as "against a wall" if within this distance. */
+    wallContactCm: 10,
+    /** A window this close to the bed counts as "beside a window". */
+    windowNearCm: 30,
+    /** How far into the room the walkway in front of the door extends. */
+    walkwayDepthCm: 100,
+    /** Double beds and bigger need this much clearance on both long sides. */
+    sideClearanceCm: 60,
+    /** Beds at least this wide count as double or larger. */
+    doubleMinWidthCm: 120,
+    /** Ignore this much of each side near the head (that's where nightstands go). */
+    sideIgnoreNearHeadCm: 50,
+    /** Two nightstands "match" if their sizes differ by at most this. */
+    nightstandMatchToleranceCm: 10,
+    penalty: {
+      doorHidden: -30,
+      doorBlocked: -15,
+      coffin: -30,
+      sameWallAsDoor: -8,
+      noWallBehind: -25,
+      openingBehind: -20,
+      besideWindow: -6,
+      inDoorSwing: -15,
+      inWalkway: -8,
+      tightSide: -8,
+      sideAgainstWall: -12,
+    },
+    bonus: { matchingNightstands: 5 },
+    /** The desk check counts half (it's a sub-item of the bed category). */
+    desk: { backToDoor: -10, doorToSide: -5 },
+    /** When suggesting a better bed spot, step along each wall by this much. */
+    searchStepCm: 10,
+  },
+  arrows: {
+    rangeCm: 250,
+    /** Corners touching the target (closer than this) don't "aim" across space, so they're ignored. */
+    minDistanceCm: 10,
+    /** Closer than this is "bad" rather than "warn". */
+    badWithinCm: 120,
+    maxPenalty: -14,
+    bookshelfNearBedCm: 100,
+    bookshelfPenalty: -6,
+    /** A nightstand more than this much taller than the mattress gets a warning. */
+    nightstandToleranceCm: 5,
+    nightstandPenalty: -4,
+  },
+  mirrors: {
+    rayLengthCm: 1000,
+    /** "Over the bed" = on the head wall within this distance of the headboard. */
+    overBedCm: 25,
+    penalty: -50,
+  },
+  flow: {
+    rushPenalty: -30,
+    bedShaWarn: 0.15,
+    bedShaBad: 0.3,
+    bedShaWarnPenalty: -15,
+    bedShaBadPenalty: -30,
+    stagnantPenaltyEach: -5,
+    stagnantPenaltyMax: -20,
+    /** Share of open floor that should be sheng chi for an overall "good". */
+    shengGood: 0.5,
+    shengLow: 0.25,
+    shengLowPenalty: -10,
+  },
+  clutter: {
+    coverageWarn: 0.55,
+    coverageBad: 0.65,
+    coverageWarnPenalty: -20,
+    coverageBadPenalty: -40,
+    walkwayWidthCm: 75,
+    noWalkwayPenalty: -40,
+    /** Sampling grid for coverage and path-finding. */
+    gridCm: 5,
+  },
+  elements: {
+    dominantShare: 0.45,
+    dominantPenalty: -15,
+    missingTwoPenalty: -20,
+    tvPenalty: -15,
+    deskPenalty: -10,
+    maxLargePlants: 3,
+    tooManyPlantsPenalty: -5,
+  },
+};
+
+/** The five-element cycles (Western feng shui uses them as gentle tips only). */
+export const ELEMENT_CYCLES = {
+  /** Each element feeds the next: Water nourishes Wood, Wood feeds Fire, ... */
+  productive: { Water: 'Wood', Wood: 'Fire', Fire: 'Earth', Earth: 'Metal', Metal: 'Water' },
+  /** Each element restrains the next: Water puts out Fire, Fire melts Metal, ... */
+  controlling: { Water: 'Fire', Fire: 'Metal', Metal: 'Wood', Wood: 'Earth', Earth: 'Water' },
+} as const;
+
 /** Visual settings for particles and the heatmap. */
 export const FLOW_VIEW = {
   maxParticles: 700,

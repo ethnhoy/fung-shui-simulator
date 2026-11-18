@@ -13,6 +13,7 @@ import { buildProperties } from './ui/properties';
 import { buildToolbar, type AppMode } from './ui/toolbar';
 import { SimController, type SimStatus } from './sim/controller';
 import { buildSimPanel } from './ui/simPanel';
+import { buildScoreCard } from './ui/scoreCard';
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -29,6 +30,7 @@ const refreshProperties = buildProperties($('properties'), store, getUnits);
 
 const sim = new SimController($<HTMLCanvasElement>('flow-canvas'), store, () => editor.getView());
 buildSimPanel($('sim-panel'), sim);
+buildScoreCard($('score-card'), store, sim);
 
 function setMode(mode: AppMode): void {
   const simulate = mode === 'simulate';
