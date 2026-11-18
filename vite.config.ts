@@ -7,5 +7,7 @@ export default defineConfig(({ command, isPreview }) => ({
   base: command === 'build' || isPreview ? '/fung-shui-simulator/' : '/',
   test: {
     include: ['tests/**/*.test.ts'],
+    // The simulation tests do real number-crunching; GitHub's build machines are slower than a laptop.
+    testTimeout: 20_000,
   },
 }));

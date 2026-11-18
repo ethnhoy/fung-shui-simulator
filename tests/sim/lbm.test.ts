@@ -91,5 +91,5 @@ describe('LbmSolver', () => {
     const blocked = inflow(addFurniture(sampleLayout(), createFurniture('plant', 341, 220, 'large')));
     expect(clear).toBeGreaterThan(0.04); // tuned to roughly the reference speed
     expect(blocked).toBeLessThan(clear * 0.9);
-  });
+  }, 60_000); // two full simulations: allow plenty of time on slower machines (e.g. GitHub's)
 });
