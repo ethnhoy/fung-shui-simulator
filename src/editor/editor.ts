@@ -16,7 +16,12 @@ import { normalizeAngle, roundTo } from '../geometry/vec';
 import type { UnitSystem } from '../geometry/units';
 import { THEME } from '../ui/theme';
 import { drawFurniture, drawOpening, drawRoom } from './draw';
+import { drawBagua, drawBestSpot, drawGhost, drawHighlight } from './overlays';
 import type { Store } from './store';
+import type { HighlightShape, Status } from '../rules/types';
+import type { LayoutDiff } from '../report/diff';
+import type { SpotCell } from '../report/bestSpot';
+import type { BaguaZone } from '../rules/bagua';
 
 /** Screen pixels of empty space kept around the room (room for dimension labels). */
 const PADDING_PX = 56;
@@ -32,7 +37,24 @@ export class Editor {
   private furnitureGroup = new Konva.Group();
   private openingGroup = new Konva.Group();
   private handleGroup = new Konva.Group();
+  /** Overlays: bagua and best-spot sit on the floor (under furniture); ghost and highlight on top. */
+  private baguaGroup = new Konva.Group({ listening: false });
+  private baguaLabelGroup = new Konva.Group({ listening: false });
+  private spotGroup = new Konva.Group({ listening: false });
+  private ghostGroup = new Konva.Group({ listening: false });
+  private highlightGroup = new Konva.Group({ listening: false });
+  private spotLabel = new Konva.Label({ listening: false, visible: false });
   private transformer: Konva.Transformer;
+
+  /** Overlay state, redrawn after every render (the zoom level may have changed). */
+  private highlight: { shapes: HighlightShape[]; status: Status } | null = null;
+  private ghost: LayoutDiff | null = null;
+  private spot: { cells: SpotCell[]; step: number; done: boolean; id: string } | null = null;
+  private bagua: BaguaZone[] | null = null;
+
+  /** Called when the user starts/finishes dragging a furniture item (used for the best-spot heatmap). */
+  onFurnitureDragStart: (id: string) => void = () => {};
+  onFurnitureDragEnd: (id: string) => void = () => {};
 
   /** Screen pixels per cm. */
   private pxPerCm = 1;
@@ -53,7 +75,12 @@ export class Editor {
     this.layer = new Konva.Layer();
     this.world = new Konva.Group();
     // Draw order matters: room first, then furniture, then doors/windows on the walls, then handles.
-    this.world.add(this.roomGroup, this.furnitureGroup, this.openingGroup, this.handleGroup);
+    this.world.add(
+      this.roomGroup, this.baguaGroup, this.spotGroup, this.furnitureGroup, this.openingGroup,
+      this.ghostGroup, this.baguaLabelGroup, this.highlightGroup, this.handleGroup,
+    );
+    this.spotLabel.add(new Konva.Tag({ fill: THEME.ink, cornerRadius: 4, opacity: 0.9 }));
+    this.spotLabel.add(new Konva.Text({ text: '', fill: '#fff', padding: 5, fontSize: 12 }));
     this.transformer = new Konva.Transformer({
       rotateEnabled: true,
       flipEnabled: false,
@@ -71,7 +98,8 @@ export class Editor {
         return Math.abs(newBox.width) < min || Math.abs(newBox.height) < min ? oldBox : newBox;
       },
     });
-    this.layer.add(this.world, this.transformer);
+    // The score label lives outside the scaled world so its text stays a constant size.
+    this.layer.add(this.world, this.transformer, this.spotLabel);
     this.stage.add(this.layer);
 
     this.bindStageEvents();
@@ -90,6 +118,73 @@ export class Editor {
   /** Where the room is drawn on screen, so the flow canvas can line up exactly underneath. */
   getView(): { x: number; y: number; scale: number } {
     return { x: this.world.x(), y: this.world.y(), scale: this.pxPerCm };
+  }
+
+  // ------------------------------------------------------------ Overlays (used by the report)
+
+  setHighlight(shapes: HighlightShape[] | null, status: Status = 'bad'): void {
+    this.highlight = shapes && shapes.length ? { shapes, status } : null;
+    this.drawOverlays();
+  }
+
+  setGhost(diff: LayoutDiff | null): void {
+    this.ghost = diff;
+    this.drawOverlays();
+  }
+
+  setBestSpot(spot: { cells: SpotCell[]; step: number; done: boolean; id: string } | null): void {
+    this.spot = spot;
+    if (!spot) this.spotLabel.visible(false);
+    this.drawOverlays();
+  }
+
+  setBagua(zones: BaguaZone[] | null): void {
+    this.bagua = zones;
+    this.drawOverlays();
+  }
+
+  /** The editor's canvas, for the before/after snapshot. */
+  toCanvas(): HTMLCanvasElement {
+    this.transformer.visible(false);
+    const canvas = this.stage.toCanvas({ pixelRatio: 1 });
+    this.transformer.visible(true);
+    return canvas;
+  }
+
+  private drawOverlays(): void {
+    for (const g of [this.baguaGroup, this.baguaLabelGroup, this.spotGroup, this.ghostGroup, this.highlightGroup]) g.destroyChildren();
+    if (this.bagua) {
+      this.baguaGroup.add(drawBagua(this.bagua, this.px, 'grid'));
+      this.baguaLabelGroup.add(drawBagua(this.bagua, this.px, 'labels'));
+    }
+    if (this.spot) this.spotGroup.add(drawBestSpot(this.spot.cells, this.spot.step, this.px, this.spot.done));
+    if (this.ghost) this.ghostGroup.add(drawGhost(this.ghost, this.px));
+    if (this.highlight) this.highlightGroup.add(drawHighlight(this.highlight.shapes, this.highlight.status, this.px));
+    this.layer.batchDraw();
+  }
+
+  /** While dragging with the heatmap on, show the score of the nearest scored cell next to the item. */
+  private updateSpotLabel(node: Konva.Group): void {
+    const spot = this.spot;
+    if (!spot || spot.id !== node.id()) return;
+    let best: SpotCell | null = null;
+    let bestD = Infinity;
+    for (const c of spot.cells) {
+      const d = Math.hypot(c.x - node.x(), c.y - node.y());
+      if (d < bestD) {
+        bestD = d;
+        best = c;
+      }
+    }
+    let text = '';
+    if (best && bestD <= spot.step) {
+      if (best.score === null) text = 'Doesn’t fit here';
+      else text = `Score here: ${best.score}${best.blocked ? ' (furniture in the way)' : ''}`;
+    }
+    (this.spotLabel.getText() as Konva.Text).text(text);
+    const abs = node.getAbsolutePosition();
+    this.spotLabel.position({ x: abs.x + 14, y: abs.y - 34 });
+    this.spotLabel.visible(!!text);
   }
 
   setSimulateMode(on: boolean): void {
@@ -153,6 +248,7 @@ export class Editor {
     }
 
     if (!this.draggingHandle) this.drawHandles(room);
+    this.drawOverlays();
     this.updateSelection();
   }
 
@@ -177,13 +273,17 @@ export class Editor {
     node.on('mouseenter', () => (this.stage.container().style.cursor = 'move'));
     node.on('mouseleave', () => (this.stage.container().style.cursor = 'default'));
 
+    node.on('dragstart', () => this.onFurnitureDragStart(id));
     node.on('dragmove', () => {
       const f = this.store.layout.furniture.find((x) => x.id === id);
-      if (!f || this.shiftDown) return;
-      const room = this.store.layout.room;
-      node.position(snapFurniturePosition(f, node.position(), roomWalls(room), room));
+      if (f && !this.shiftDown) {
+        const room = this.store.layout.room;
+        node.position(snapFurniturePosition(f, node.position(), roomWalls(room), room));
+      }
+      this.updateSpotLabel(node);
     });
     node.on('dragend', () => {
+      this.onFurnitureDragEnd(id);
       const p = node.position();
       this.store.commit(updateFurniture(this.store.layout, id, { x: roundTo(p.x, 0.5), y: roundTo(p.y, 0.5) }));
     });

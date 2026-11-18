@@ -19,10 +19,16 @@
         <canvas id="flow-canvas" class="flow-canvas"></canvas>
         <div id="canvas-host" class="canvas-host"></div>
         <div id="sim-banner" class="sim-banner" role="status" hidden></div>
+        <div id="fix-bar" class="fix-bar" role="status" hidden></div>
       </main>
       <aside class="panel panel-right">
         <section id="score-card" class="score-card" aria-label="Feng shui score" aria-live="polite"></section>
-        <div id="properties" aria-label="Properties"></div>
+        <div class="panel-tabs" role="tablist" aria-label="Right panel">
+          <button type="button" role="tab" data-tab="report">Report <span id="report-tab-count" class="tab-count"></span></button>
+          <button type="button" role="tab" data-tab="properties">Properties</button>
+        </div>
+        <div id="report-panel" role="tabpanel" aria-label="Feng shui report"></div>
+        <div id="properties" role="tabpanel" aria-label="Properties" hidden></div>
       </aside>
       <footer class="statusbar">
         Drag to move · Shift while dragging = no snapping · R rotate · ⌫ delete · ⌘/Ctrl+D duplicate · Arrows nudge · Esc deselect

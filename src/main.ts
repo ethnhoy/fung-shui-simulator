@@ -14,6 +14,11 @@ import { buildToolbar, type AppMode } from './ui/toolbar';
 import { SimController, type SimStatus } from './sim/controller';
 import { buildSimPanel } from './ui/simPanel';
 import { buildScoreCard } from './ui/scoreCard';
+import { ReportModel } from './report/reportModel';
+import { FixPreview } from './report/fixPreview';
+import { buildReportPanel } from './report/reportPanel';
+import { capturePlan, openCompare } from './report/compare';
+import { BestSpotRunner } from './report/bestSpot';
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -30,7 +35,59 @@ const refreshProperties = buildProperties($('properties'), store, getUnits);
 
 const sim = new SimController($<HTMLCanvasElement>('flow-canvas'), store, () => editor.getView());
 buildSimPanel($('sim-panel'), sim);
-buildScoreCard($('score-card'), store, sim);
+
+// ---------------------------------------------------------------- Report
+
+const reportModel = new ReportModel(store, sim);
+buildScoreCard($('score-card'), reportModel);
+const fixPreview = new FixPreview($('fix-bar'), editor, store, reportModel);
+const plan = () => capturePlan(editor, $<HTMLCanvasElement>('flow-canvas'));
+buildReportPanel($('report-panel'), {
+  store,
+  editor,
+  model: reportModel,
+  preview: fixPreview,
+  onSnapshot: () => reportModel.saveSnapshot(plan()),
+  onCompare: () => openCompare(reportModel, plan()),
+});
+
+// Right panel tabs: Report / Properties. Selecting something on the plan opens Properties.
+function showTab(tab: 'report' | 'properties'): void {
+  $('report-panel').hidden = tab !== 'report';
+  $('properties').hidden = tab !== 'properties';
+  for (const b of document.querySelectorAll<HTMLButtonElement>('.panel-tabs button')) {
+    const active = b.dataset.tab === tab;
+    b.classList.toggle('active', active);
+    b.setAttribute('aria-selected', String(active));
+  }
+}
+for (const b of document.querySelectorAll<HTMLButtonElement>('.panel-tabs button')) {
+  b.addEventListener('click', () => showTab(b.dataset.tab as 'report' | 'properties'));
+}
+store.subscribe((kind) => {
+  if (kind === 'selection' && store.selectedId) showTab('properties');
+});
+const refreshTabBadge = () => {
+  const n = reportModel.report.results.filter((r) => r.status === 'bad' || r.status === 'warn').length;
+  $('report-tab-count').textContent = n ? String(n) : '';
+};
+reportModel.subscribe(refreshTabBadge);
+refreshTabBadge();
+showTab('report');
+
+// Best-spot heatmap while dragging the bed or a desk.
+const bestSpot = new BestSpotRunner();
+editor.onFurnitureDragStart = (id) => {
+  const f = store.layout.furniture.find((x) => x.id === id);
+  if (!f || (f.type !== 'bed' && f.type !== 'desk')) return;
+  // About 25 cells across the longest side keeps it quick in any room size.
+  const step = Math.max(15, Math.round(Math.max(store.layout.room.width, store.layout.room.depth) / 25 / 5) * 5);
+  bestSpot.start(store.layout, id, step, (cells, done) => editor.setBestSpot({ cells, step, done, id }));
+};
+editor.onFurnitureDragEnd = () => {
+  bestSpot.stop();
+  editor.setBestSpot(null);
+};
 
 function setMode(mode: AppMode): void {
   const simulate = mode === 'simulate';
@@ -96,6 +153,7 @@ window.addEventListener('keydown', (e) => {
     deleteSelected(store);
   } else if (key === 'escape') {
     store.select(null);
+    editor.setHighlight(null);
   } else if (key === 'r' && !mod) {
     rotateSelected(store, e.shiftKey ? -90 : 90);
   } else if (key.startsWith('arrow')) {
@@ -107,3 +165,9 @@ window.addEventListener('keydown', (e) => {
     }
   }
 });
+
+// Development only: expose the main objects in the browser console for debugging.
+// (Vite strips this block out of production builds because import.meta.env.DEV is false there.)
+if (import.meta.env.DEV) {
+  Object.assign(window, { chi: { store, editor, sim, reportModel } });
+}

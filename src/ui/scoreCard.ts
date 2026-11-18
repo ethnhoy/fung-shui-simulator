@@ -1,18 +1,11 @@
 /**
  * A compact score summary at the top of the right panel: the overall score,
- * its label, a bar per category and a count of issues. (The full report
- * with click-to-highlight and fixes arrives in milestone 4.)
- *
- * Re-scores when the layout changes, and again when a simulation settles
- * so the chi flow category includes the flow statistics.
+ * its label, a bar per category and a count of issues. It reads from the
+ * shared ReportModel, so the score is only calculated once per change.
  */
-import type { Store } from '../editor/store';
-import type { SimController } from '../sim/controller';
-import { evaluate } from '../rules/scoring';
+import type { ReportModel } from '../report/reportModel';
 import type { Report } from '../rules/types';
 import { h } from './dom';
-
-const DEBOUNCE_MS = 150;
 
 /** Icon + colour per label, so the meaning never relies on colour alone. */
 const LABEL_STYLE: Record<Report['label'], { icon: string; cls: string }> = {
@@ -22,35 +15,12 @@ const LABEL_STYLE: Record<Report['label'], { icon: string; cls: string }> = {
   Unsettled: { icon: '✕', cls: 'score-low' },
 };
 
-export function buildScoreCard(root: HTMLElement, store: Store, sim: SimController): { latest: () => Report } {
-  let report = evaluate(store.layout);
-  let timer: number | undefined;
-
-  const recompute = () => {
-    // Only trust sim stats from a settled run of the *current* layout (the controller clears them on every change).
-    const stats = sim.status.active && sim.status.stats?.settled ? sim.status.stats : null;
-    report = evaluate(store.layout, stats);
-    render();
-  };
-  const schedule = () => {
-    window.clearTimeout(timer);
-    timer = window.setTimeout(recompute, DEBOUNCE_MS);
-  };
-
-  store.subscribe((kind) => {
-    if (kind !== 'selection' && kind !== 'preview') schedule();
-  });
-  let wasSettled = false;
-  sim.subscribe((s) => {
-    const settled = !!(s.active && s.stats?.settled);
-    if (settled !== wasSettled) schedule();
-    wasSettled = settled;
-  });
-
+export function buildScoreCard(root: HTMLElement, model: ReportModel): void {
   function render(): void {
+    const report = model.report;
     const style = LABEL_STYLE[report.label];
     const issues = report.results.filter((r) => r.status === 'bad' || r.status === 'warn').length;
-    const working = report.results.filter((r) => r.status === 'good').length;
+    const working = report.results.filter((r) => r.status === 'good' && r.category !== 'bagua').length;
     root.replaceChildren(
       h('div', { class: `score-head ${style.cls}` },
         h('div', { class: 'score-number', 'aria-label': `Score ${report.overall} out of 100` }, String(report.overall)),
@@ -68,9 +38,8 @@ export function buildScoreCard(root: HTMLElement, store: Store, sim: SimControll
           ),
         ),
       ),
-      ...(report.usedSimulation ? [] : [h('p', { class: 'field-hint' }, 'Chi flow uses the simulation: switch to Simulate to include it.')]),
     );
   }
+  model.subscribe(render);
   render();
-  return { latest: () => report };
 }
