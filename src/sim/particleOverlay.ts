@@ -12,9 +12,8 @@ import { ParticleSystem, type ChiStream, type Particle, type Tint } from './part
 import { bandOf, PARTICLE_BANDS, type ViewTransform } from './renderer';
 import type { RasterGrid } from './types';
 
-/** Stream tints: chi bouncing off a mirror is silvery blue; chi draining out of the door is a dusky brown. */
+/** Stream tints: chi draining out of the door is a dusky brown (arrows and mirrors use the red end of the chi ramp). */
 const TINT_CSS: Record<Exclude<Tint, 'flow'>, string> = {
-  mirror: 'rgb(120, 170, 205)',
   coffin: 'rgb(110, 84, 70)',
 };
 

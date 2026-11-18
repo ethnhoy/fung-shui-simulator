@@ -40,8 +40,8 @@ export interface ChiStream {
   severity: number;
 }
 
-/** Colour family: flow particles use the chi colour ramp; mirror and coffin streams have their own tints. */
-export type Tint = 'flow' | 'mirror' | 'coffin';
+/** Colour family: flow, arrow and mirror particles use the chi colour ramp; coffin streams have their own tint. */
+export type Tint = 'flow' | 'coffin';
 
 interface Guide {
   streamId: string;
@@ -263,8 +263,10 @@ export class ParticleSystem {
       age: 0,
       trail: trail.length ? trail : [{ ...start }],
       // Poison arrows are cutting sha chi: orange to red depending on how close the corner is.
-      level: s.kind === 'arrow' ? 0.72 + 0.3 * s.severity : 0.5,
-      tint: s.kind === 'arrow' ? 'flow' : s.kind,
+      // Poison arrows and mirror reflections are harmful sha chi, so both are red on the chi ramp
+      // (arrows from closer corners are redder).
+      level: s.kind === 'arrow' ? 0.72 + 0.3 * s.severity : s.kind === 'mirror' ? 0.95 : 0.5,
+      tint: s.kind === 'coffin' ? 'coffin' : 'flow',
       guide: {
         streamId: s.id,
         kind: s.kind,
