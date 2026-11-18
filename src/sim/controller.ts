@@ -42,7 +42,7 @@ export class SimController {
   playing = true;
   speed = 1;
   quality: Quality = 'standard';
-  options: RenderOptions = { heatmap: true, particles: true, arrows: false };
+  options: RenderOptions = { heatmap: true, particles: true, arrows: false, problems: true };
   status: SimStatus = { active: false, mode: null, running: false, settled: false, step: 0, unstable: false, stats: null };
 
   constructor(
@@ -170,6 +170,7 @@ export class SimController {
   setOptions(patch: Partial<RenderOptions>): void {
     this.options = { ...this.options, ...patch };
     this.overlay.showParticles = this.options.particles;
+    this.overlay.setShowProblems(this.options.problems);
   }
 
   /** Higher quality has 4× the cells, so run fewer steps per batch to keep the page responsive. */

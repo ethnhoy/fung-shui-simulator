@@ -51,7 +51,7 @@ export function buildSimPanel(root: HTMLElement, sim: SimController): void {
   speed.addEventListener('input', applySpeed);
   applySpeed();
 
-  const toggle = (label: string, key: 'heatmap' | 'particles' | 'arrows') => {
+  const toggle = (label: string, key: 'heatmap' | 'particles' | 'arrows' | 'problems') => {
     const input = h('input', { type: 'checkbox', checked: sim.options[key] });
     input.addEventListener('change', () => sim.setOptions({ [key]: input.checked }));
     return h('label', { class: 'checkbox' }, input, label);
@@ -89,6 +89,7 @@ export function buildSimPanel(root: HTMLElement, sim: SimController): void {
     toggle('Chi heatmap', 'heatmap'),
     toggle('Particles & trails', 'particles'),
     toggle('Velocity arrows', 'arrows'),
+    toggle('Problem chi (corners, mirrors, coffin line)', 'problems'),
     h('label', { class: 'field' }, h('span', { class: 'field-label' }, 'Quality'), quality),
     h('h3', {}, 'Legend'),
     legend,

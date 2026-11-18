@@ -29,6 +29,10 @@ export class ParticleOverlay {
   speed = 1;
   /** The "Particles & trails" checkbox. */
   showParticles = true;
+  /** The "Problem chi" checkbox: whether corners, mirrors and the coffin line act on the particles. */
+  private showProblems = true;
+  /** The latest problem streams, kept so they can come back when the checkbox is ticked again. */
+  private streams: ChiStream[] = [];
 
   constructor(
     private canvas: HTMLCanvasElement,
@@ -40,7 +44,15 @@ export class ParticleOverlay {
   // ------------------------------------------------------------ Inputs
 
   setStreams(streams: ChiStream[]): void {
-    this.particles.setStreams(streams);
+    this.streams = streams;
+    this.particles.setStreams(this.showProblems ? streams : []);
+  }
+
+  /** Turn problem chi on or off. Off: pushed particles simply carry on as normal flow. */
+  setShowProblems(on: boolean): void {
+    if (on === this.showProblems) return;
+    this.showProblems = on;
+    this.particles.setStreams(on ? this.streams : []);
   }
 
   /** Simulate mode starts following a grid; null (Edit mode, or no flow) clears every particle. */

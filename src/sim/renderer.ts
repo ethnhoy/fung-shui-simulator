@@ -22,6 +22,8 @@ export interface RenderOptions {
   heatmap: boolean;
   particles: boolean;
   arrows: boolean;
+  /** Let sharp corners, mirrors and the coffin line act on the chi particles. */
+  problems: boolean;
 }
 
 /** One representative colour per class (legend swatches). */
