@@ -17,6 +17,7 @@ import type { UnitSystem } from '../geometry/units';
 import { THEME } from '../ui/theme';
 import { drawFurniture, drawOpening, drawRoom } from './draw';
 import { drawBagua, drawBestSpot, drawGhost, drawHighlight } from './overlays';
+import { drawMarkers, type Animated, type MarkerItem } from './markers';
 import type { Store } from './store';
 import type { HighlightShape, Status } from '../rules/types';
 import type { LayoutDiff } from '../report/diff';
@@ -51,6 +52,19 @@ export class Editor {
   private ghost: LayoutDiff | null = null;
   private spot: { cells: SpotCell[]; step: number; done: boolean; id: string } | null = null;
   private bagua: BaguaZone[] | null = null;
+
+  /**
+   * Problem markers live on their own layer on top, so their animation
+   * (sliding dashes) only redraws that layer, not the whole plan.
+   */
+  private markerLayer = new Konva.Layer();
+  private markerWorld = new Konva.Group();
+  private markerTooltip = new Konva.Label({ listening: false, visible: false });
+  private markers: MarkerItem[] = [];
+  private markerAnimated: Animated = [];
+  private markerAnimation: Konva.Animation;
+  /** Called when a problem marker's badge is clicked. */
+  onMarkerClick: (resultId: string) => void = () => {};
 
   /** Called when the user starts/finishes dragging a furniture item (used for the best-spot heatmap). */
   onFurnitureDragStart: (id: string) => void = () => {};
@@ -102,6 +116,16 @@ export class Editor {
     this.layer.add(this.world, this.transformer, this.spotLabel);
     this.stage.add(this.layer);
 
+    this.markerTooltip.add(new Konva.Tag({ fill: THEME.ink, cornerRadius: 4, opacity: 0.92 }));
+    this.markerTooltip.add(new Konva.Text({ text: '', fill: '#fff', padding: 6, fontSize: 12 }));
+    this.markerLayer.add(this.markerWorld, this.markerTooltip);
+    this.stage.add(this.markerLayer);
+    // Slide the dashes of animated markers along, about 20 px per second.
+    this.markerAnimation = new Konva.Animation((frame) => {
+      const offset = -((frame?.time ?? 0) / 50);
+      for (const shape of this.markerAnimated) shape.dashOffset(offset);
+    }, this.markerLayer);
+
     this.bindStageEvents();
     this.store.subscribe((kind) => {
       if (kind === 'selection') this.updateSelection();
@@ -141,6 +165,24 @@ export class Editor {
   setBagua(zones: BaguaZone[] | null): void {
     this.bagua = zones;
     this.drawOverlays();
+  }
+
+  /** Show (or clear, with an empty list) the always-on problem markers. */
+  setMarkers(items: MarkerItem[]): void {
+    this.markers = items;
+    this.drawMarkers();
+  }
+
+  private drawMarkers(): void {
+    this.markerWorld.destroyChildren();
+    this.markerTooltip.visible(false);
+    const { group, animated } = drawMarkers(this.markers, this.px, this.markerTooltip, (id) => this.onMarkerClick(id));
+    this.markerWorld.add(group);
+    this.markerAnimated = animated;
+    // Only run the animation loop while something is animating.
+    if (animated.length) this.markerAnimation.start();
+    else this.markerAnimation.stop();
+    this.markerLayer.batchDraw();
   }
 
   /** The editor's canvas, for the before/after snapshot. */
@@ -217,6 +259,9 @@ export class Editor {
       x: (this.stage.width() - room.width * this.pxPerCm) / 2,
       y: (this.stage.height() - room.depth * this.pxPerCm) / 2,
     });
+    // The marker layer uses exactly the same room-to-screen transform.
+    this.markerWorld.scale(this.world.scale());
+    this.markerWorld.position(this.world.position());
     this.fittedSize = { width: room.width, depth: room.depth };
   }
 
@@ -249,6 +294,7 @@ export class Editor {
 
     if (!this.draggingHandle) this.drawHandles(room);
     this.drawOverlays();
+    this.drawMarkers();
     this.updateSelection();
   }
 

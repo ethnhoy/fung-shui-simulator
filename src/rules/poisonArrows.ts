@@ -104,6 +104,7 @@ export function poisonArrowsRule(ctx: RuleContext): RuleResult[] {
         ...(sourceFurniture ? [{ kind: 'outline' as const, points: rectCorners(sourceFurniture) }] : []),
       ],
       fix: plantFix(corner.at, corner.dir, dist),
+      marker: { kind: 'poisonArrow', from: corner.at, to: hitAt, severity: Math.max(0, Math.min(1, closeness)) },
     });
   }
 
@@ -119,6 +120,7 @@ export function poisonArrowsRule(ctx: RuleContext): RuleResult[] {
         message: 'Open shelves close to the bed',
         explanation: 'Each open shelf edge is like a little blade of “cutting chi”, and the busy contents keep the mind active. Closed storage is calmer next to the bed.',
         highlight: [{ kind: 'outline', points: rectCorners(f) }],
+        marker: { kind: 'zone', points: rectCorners(f) },
         fix: { label: 'Swap for a closed cabinet', apply: (l) => updateFurniture(l, f.id, { type: 'cabinet', label: '' }) },
       });
     }

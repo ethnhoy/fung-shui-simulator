@@ -17,6 +17,20 @@ export type HighlightShape =
   | { kind: 'point'; at: Point }
   | { kind: 'path'; points: Point[] };
 
+/**
+ * An always-on picture of a problem, drawn on the plan (unlike `highlight`,
+ * which only shows when you click the issue). Plain data again.
+ */
+export type IssueMarker =
+  /** Reflected light from a mirror's face: the edge it starts from, its direction and how far it reaches. */
+  | { kind: 'mirrorBeam'; edge: [Point, Point]; dir: Point; length: number }
+  /** A "poison arrow" from a sharp corner to what it hits; severity 0..1 (1 = very close). */
+  | { kind: 'poisonArrow'; from: Point; to: Point; severity: number }
+  /** The coffin line: a strip from the foot of the bed out through the door. */
+  | { kind: 'coffin'; strip: Point[]; from: Point; to: Point }
+  /** A shaded problem area (door swing over the bed, open shelves...). */
+  | { kind: 'zone'; points: Point[] };
+
 /** A one-click fix: a label plus a function that returns the changed layout. */
 export interface SuggestedFix {
   label: string;
@@ -38,6 +52,8 @@ export interface RuleResult {
   /** Why it matters, in plain language. */
   explanation: string;
   highlight: HighlightShape[];
+  /** Optional always-visible picture of the problem on the plan. */
+  marker?: IssueMarker;
   fix?: SuggestedFix;
 }
 

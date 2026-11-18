@@ -48,14 +48,36 @@ const reportModel = new ReportModel(store, sim);
 buildScoreCard($('score-card'), reportModel);
 const fixPreview = new FixPreview($('fix-bar'), editor, store, reportModel);
 const plan = () => capturePlan(editor, $<HTMLCanvasElement>('flow-canvas'));
-buildReportPanel($('report-panel'), {
+const reportPanel = buildReportPanel($('report-panel'), {
   store,
   editor,
   model: reportModel,
   preview: fixPreview,
   onSnapshot: () => reportModel.saveSnapshot(plan()),
   onCompare: () => openCompare(reportModel, plan()),
+  getShowMarkers: () => prefs.showMarkers,
+  setShowMarkers: (on) => {
+    prefs.showMarkers = on;
+    savePrefs(prefs);
+    refreshMarkers();
+  },
 });
+
+// Always-on problem markers (mirror beams, poison arrows, coffin line...) on the plan.
+function refreshMarkers(): void {
+  const items = prefs.showMarkers
+    ? reportModel.report.results
+        .filter((r) => r.marker && (r.status === 'bad' || r.status === 'warn'))
+        .map((r) => ({ id: r.id, status: r.status, message: r.message, marker: r.marker! }))
+    : [];
+  editor.setMarkers(items);
+}
+reportModel.subscribe(refreshMarkers);
+refreshMarkers();
+editor.onMarkerClick = (id) => {
+  showTab('report');
+  reportPanel.open(id);
+};
 
 // Right panel tabs: Report / Properties. Selecting something on the plan opens Properties.
 function showTab(tab: 'report' | 'properties'): void {

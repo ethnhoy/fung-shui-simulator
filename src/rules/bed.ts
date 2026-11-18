@@ -157,11 +157,20 @@ export function evaluateBedPlacement(ctx: RuleContext): RuleResult[] {
     // --- Coffin position: feet pointing straight out of the door.
     const t = raySegment(bed.footCentre, bed.facing, door.a, door.b);
     if (t !== null) {
+      // A strip half the bed's width, from the foot out to the doorway.
+      const side = rotate({ x: bed.f.width / 4, y: 0 }, bed.f.rotation);
+      const end = add(bed.footCentre, scale(bed.facing, t));
       out.push(result({
         id: 'bed.coffin', status: 'bad', scoreImpact: P.coffin,
         message: 'Your feet point straight out of the door (“coffin position”)',
         explanation: 'Traditionally the dead were carried out feet first, so lying in line with the door is considered draining. Turn or shift the bed so it isn’t aligned with the doorway.',
-        highlight: [{ kind: 'ray', from: bed.footCentre, to: add(bed.footCentre, scale(bed.facing, t)) }, bedOutline],
+        highlight: [{ kind: 'ray', from: bed.footCentre, to: end }, bedOutline],
+        marker: {
+          kind: 'coffin',
+          from: bed.footCentre,
+          to: end,
+          strip: [add(bed.footCentre, side), add(end, side), sub(end, side), sub(bed.footCentre, side)],
+        },
       }));
     }
   }
@@ -249,6 +258,7 @@ export function evaluateBedPlacement(ctx: RuleContext): RuleResult[] {
         message: 'The door swings into the bed',
         explanation: 'The door can’t open fully and chi bumps straight into the bed. Leave the door’s swing area clear.',
         highlight: [{ kind: 'outline', points: swing }, bedOutline],
+        marker: { kind: 'zone', points: swing },
       }));
     }
   }

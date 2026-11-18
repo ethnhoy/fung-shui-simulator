@@ -52,3 +52,18 @@ describe('poison arrows', () => {
     expect(run(l).some((r) => r.id.startsWith('arrows.nightstand'))).toBe(true);
   });
 });
+
+describe('poison arrow markers', () => {
+  it('runs from the corner to the bed, more severe when closer', () => {
+    const marker = (x: number) => run(room([bedAgainstTop(), item('dresser', x, x, 0)])).find((r) => r.id.startsWith('arrows.corner'))!.marker!;
+    const near = marker(280);
+    const far = marker(330);
+    expect(near.kind).toBe('poisonArrow');
+    if (near.kind !== 'poisonArrow' || far.kind !== 'poisonArrow') return;
+    expect(near.from).toEqual({ x: 230, y: 255 }); // the dresser's back-left corner
+    expect(near.severity).toBeGreaterThan(far.severity);
+    expect(near.severity).toBeLessThanOrEqual(1);
+    expect(far.severity).toBeGreaterThanOrEqual(0);
+  });
+});
+

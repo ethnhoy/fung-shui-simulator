@@ -107,3 +107,20 @@ describe('desk (half-weight sub-check)', () => {
     expect(find(r.fix!.apply(l), 'bed.deskCommanding')).toBeDefined();
   });
 });
+
+describe('bed markers', () => {
+  it('draws the coffin line from the foot of the bed to the door', () => {
+    const m = find(room([bedAgainstTop(330)]), 'bed.coffin')!.marker!;
+    expect(m.kind).toBe('coffin');
+    if (m.kind !== 'coffin') return;
+    expect(m.from).toEqual({ x: 330, y: 200 });
+    expect(m.to.y).toBeCloseTo(400);
+    expect(m.strip).toHaveLength(4);
+  });
+
+  it('shades the door swing when it hits the bed', () => {
+    const m = find(room([item('bed', 320, 290, 0, { id: 'bed', width: 90, variant: 'single' })]), 'bed.doorSwing')!.marker!;
+    expect(m.kind).toBe('zone');
+  });
+});
+

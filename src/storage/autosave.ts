@@ -13,6 +13,8 @@ const PREFS_KEY = 'chiflow.prefs.v1';
 
 export interface Prefs {
   units: UnitSystem;
+  /** Draw the always-on problem markers (mirror beams, poison arrows...) on the plan. */
+  showMarkers: boolean;
 }
 
 /** localStorage can throw (private browsing, storage full), so every access is guarded. */
@@ -60,9 +62,9 @@ export function startAutosave(store: Store): void {
 export function loadPrefs(): Prefs {
   try {
     const p = JSON.parse(safeGet(PREFS_KEY) ?? '{}');
-    return { units: p.units === 'imperial' ? 'imperial' : 'metric' };
+    return { units: p.units === 'imperial' ? 'imperial' : 'metric', showMarkers: p.showMarkers !== false };
   } catch {
-    return { units: 'metric' };
+    return { units: 'metric', showMarkers: true };
   }
 }
 

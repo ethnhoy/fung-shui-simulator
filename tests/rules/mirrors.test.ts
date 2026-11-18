@@ -31,3 +31,21 @@ describe('mirrors', () => {
     expect(run(room([bedAgainstTop()]))[0].status).toBe('good');
   });
 });
+
+describe('mirror markers', () => {
+  it('draws a beam from the mirror face to the bed', () => {
+    const l = room([bedAgainstTop(), item('mirror', 397.5, 100, 90, { id: 'm' })]);
+    const m = run(l)[0].marker!;
+    expect(m.kind).toBe('mirrorBeam');
+    if (m.kind !== 'mirrorBeam') return;
+    // Facing left (−x) from x = 395 to the bed's right edge at x = 200.
+    expect(m.dir.x).toBeCloseTo(-1);
+    expect(m.length).toBeCloseTo(194.5, 1); // the ray starts 0.5 cm in front of the glass
+    expect(m.edge[0].x).toBeCloseTo(395);
+  });
+
+  it('has no marker when the mirror is fine', () => {
+    expect(run(room([bedAgainstTop(), item('mirror', 2.5, 320, 270)]))[0].marker).toBeUndefined();
+  });
+});
+

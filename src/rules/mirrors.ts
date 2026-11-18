@@ -9,6 +9,7 @@
 import { facingVector, localToRoom, rectCorners } from '../geometry/rect';
 import { pointSegmentDistance } from '../geometry/raycast';
 import { add, scale } from '../geometry/vec';
+import type { IssueMarker } from './types';
 import { removeById } from '../model/layoutOps';
 import { RULES } from './config';
 import type { RuleContext } from './context';
@@ -37,6 +38,12 @@ export function mirrorsRule(ctx: RuleContext): RuleResult[] {
     const hit = ctx.castRay(origin, face, C.rayLengthCm, [m.id]);
     const overBed = pointSegmentDistance({ x: m.x, y: m.y }, headLeft, headRight) <= C.overBedCm;
     const fix = { label: 'Move the mirror inside a wardrobe door', apply: (l: typeof ctx.layout) => removeById(l, m.id) };
+    // The mirror's reflecting face (its front edge), for the light-beam picture.
+    const edge: [typeof origin, typeof origin] = [
+      localToRoom(m, { x: -m.width / 2, y: m.depth / 2 }),
+      localToRoom(m, { x: m.width / 2, y: m.depth / 2 }),
+    ];
+    const beam = (length: number): IssueMarker => ({ kind: 'mirrorBeam', edge, dir: face, length });
     const outline = { kind: 'outline' as const, points: rectCorners(m) };
 
     if (overBed) {
@@ -45,6 +52,7 @@ export function mirrorsRule(ctx: RuleContext): RuleResult[] {
         message: 'A mirror hangs right over the bed',
         explanation: 'A mirror above your head is said to unsettle sleep, and practically it’s heavy glass above where you lie. Move it, or cover it at night.',
         highlight: [outline, { kind: 'outline', points: bed.poly }], fix,
+        marker: beam(Math.min(bed.f.depth * 0.45, 90)),
       });
     } else if (hit.kind === 'furniture' && hit.id === bed.f.id) {
       out.push({
@@ -52,6 +60,7 @@ export function mirrorsRule(ctx: RuleContext): RuleResult[] {
         message: 'A mirror faces the bed',
         explanation: 'A mirror reflecting the bed is said to bounce energy around all night and can startle you in the dark. Move it, put it inside a wardrobe door, or cover it at night.',
         highlight: [outline, { kind: 'ray', from: origin, to: hit.point }], fix,
+        marker: beam(hit.dist),
       });
     } else {
       out.push({

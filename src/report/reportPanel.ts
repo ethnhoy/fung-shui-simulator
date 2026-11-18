@@ -23,9 +23,12 @@ interface PanelDeps {
   preview: FixPreview;
   onSnapshot: () => void;
   onCompare: () => void;
+  getShowMarkers: () => boolean;
+  setShowMarkers: (on: boolean) => void;
 }
 
-export function buildReportPanel(root: HTMLElement, deps: PanelDeps): void {
+/** Builds the report panel. Returns `open(id)` to expand an item from elsewhere (e.g. a marker badge). */
+export function buildReportPanel(root: HTMLElement, deps: PanelDeps): { open: (id: string) => void } {
   const { store, editor, model, preview } = deps;
   /** The report item currently highlighted on the plan (kept across re-renders). */
   let activeId: string | null = null;
@@ -138,6 +141,9 @@ export function buildReportPanel(root: HTMLElement, deps: PanelDeps): void {
     const working = results.filter((r) => r.status === 'good' && r.category !== 'bagua');
     const bagua = results.filter((r) => r.category === 'bagua');
 
+    const markersToggle = h('input', { type: 'checkbox', checked: deps.getShowMarkers() });
+    markersToggle.addEventListener('change', () => deps.setShowMarkers(markersToggle.checked));
+
     const baguaToggle = h('input', { type: 'checkbox', checked: showBagua });
     baguaToggle.addEventListener('change', () => {
       showBagua = baguaToggle.checked;
@@ -159,6 +165,7 @@ export function buildReportPanel(root: HTMLElement, deps: PanelDeps): void {
           ? h('button', { type: 'button', class: 'btn btn-small', onclick: deps.onCompare }, 'Compare before/after')
           : null,
       ),
+      h('label', { class: 'checkbox' }, markersToggle, 'Show problems on the plan'),
       section('Issues', issues, 'No issues: lovely.'),
       section('What’s working', working, 'Nothing yet. Start with the bed.'),
       improveSection(results),
@@ -171,4 +178,14 @@ export function buildReportPanel(root: HTMLElement, deps: PanelDeps): void {
   }
 
   render();
+
+  return {
+    open(id: string) {
+      const r = model.report.results.find((x) => x.id === id);
+      if (!r) return;
+      activeId = null; // setActive toggles, so start from "nothing open"
+      setActive(r);
+      root.querySelector('.report-item.open')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    },
+  };
 }
