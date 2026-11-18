@@ -1,6 +1,6 @@
 /**
  * Share links: the whole layout is packed into the URL after the "#", so a
- * link like https://…/chi-flow/#room=… opens someone else's bedroom.
+ * link like https://ethnhoy.github.io/fung-shui-simulator/#room=… opens someone else's bedroom.
  * Nothing is uploaded anywhere; the data lives in the link itself.
  *
  * Encoding: JSON → UTF-8 bytes → base64url (base64 with URL-safe characters).

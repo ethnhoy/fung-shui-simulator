@@ -22,7 +22,7 @@ Out of scope for v1: multiple rooms or whole homes, compass/Flying Star/classica
 - **Web Worker** runs the fluid solver so the UI never freezes.
 - **Vitest** for unit tests (rule engine and geometry helpers).
 - Keep dependencies minimal. Ask before adding any library not listed here.
-- Static site: `npm run build` → `/dist`, deployed to **GitHub Pages** via a GitHub Actions workflow. The repo is `chi-flow`, so Vite's `base` must be `/chi-flow/` for the production build.
+- Static site: `npm run build` → `/dist`, deployed to **GitHub Pages** via a GitHub Actions workflow. The repo is `ethnhoy/fung-shui-simulator` (live at https://ethnhoy.github.io/fung-shui-simulator/), so Vite's `base` must be `/fung-shui-simulator/` for the production build and preview.
 
 ## Commands
 - `npm install` installs dependencies

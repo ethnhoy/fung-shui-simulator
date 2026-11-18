@@ -2,7 +2,7 @@
 
 Draw your bedroom, watch **chi flow through it like a wind tunnel**, and get a feng shui report that explains what's working, what isn't, and how to fix it, with one-click fixes.
 
-**[▶ Live demo](https://YOUR-GITHUB-USERNAME.github.io/chi-flow/)** · [Open straight into the simulation](https://YOUR-GITHUB-USERNAME.github.io/chi-flow/?mode=simulate)
+**[▶ Live demo](https://ethnhoy.github.io/fung-shui-simulator/)** · [Open straight into the simulation](https://ethnhoy.github.io/fung-shui-simulator/?mode=simulate)
 
 ![Chi Flow in Simulate mode: particles stream from the door to the window, the floor is coloured by chi type, and the report scores the room](docs/screenshot-simulate.png)
 
