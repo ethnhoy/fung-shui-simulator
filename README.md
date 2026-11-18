@@ -8,6 +8,7 @@ Draw your bedroom, watch **chi flow through it like a wind tunnel**, and get a f
 
 ## Features
 
+- **A traditional Chinese look, "Lacquer & Gold".** Red-black lacquer panels, gold-leaf lines, a 气 seal-stamp logo, a lattice-window band, bagua trigrams on the mode tabs and the five elements' characters (木火土金水) on every piece of furniture, while every label stays in plain English.
 - **Room editor.** Rectangular or L-shaped rooms with real dimensions (metric or imperial), doors and windows that slide along the walls, and 15 kinds of furniture. Drag, rotate and resize with snapping, and use undo/redo and keyboard shortcuts.
 - **Chi flow simulation.** A Lattice Boltzmann fluid solver runs in a Web Worker. Chi enters through the main door and leaves through open windows. Tracer particles leave fading trails, and the floor is shaded on a smooth gradient from stagnant **si** (blue-grey) through healthy **sheng** (yellow) to rushing **sha** (red). Sha and si also get their own patterns, so the map never relies on colour alone. Block the stream with a plant and it slows from red to yellow.
 - **Feng shui report.** Seven Western (BTB / form school) rules give a 0–100 score: the bed's commanding position, poison arrows, mirrors, chi flow, clutter and clearance, the five elements and yin/yang, and the bagua map.

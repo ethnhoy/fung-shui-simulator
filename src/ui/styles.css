@@ -1,18 +1,45 @@
-/* Chi Flow styles: calm, warm, minimal. Colours are CSS variables so they're defined in one place. */
+/*
+ * Chi Flow styles: "Lacquer & Gold" (漆器金).
+ * A palace lacquer box: deep red-black lacquer panels, gold leaf for lines and
+ * highlights, red lacquer for the seal and for problems, ivory text.
+ * Colours are CSS variables so they're defined in one place; the canvas
+ * drawing palette mirrors them in ui/theme.ts.
+ */
 :root {
-  --bg: #f6f1ea;
-  --panel: #fffaf3;
-  --panel-border: #e7ddcf;
-  --ink: #3a3530;
-  --ink-soft: #6b625a;
-  --ink-faint: #9a9087;
-  --accent: #c06a45;
-  --accent-soft: #f3e1d6;
-  --danger: #a8432c;
-  --input-bg: #ffffff;
-  --radius: 8px;
-  --font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  color-scheme: light;
+  /* Surfaces: 漆黑 lacquer black → 乌木 ebony */
+  --bg: #1d1614;
+  --panel: #261c19;
+  --input-bg: #2f2320;
+  --panel-border: #45332d;
+  /* Text: 象牙 ivory, softened for secondary text */
+  --ink: #f1e6d4;
+  --ink-soft: #cdb89c;
+  --ink-faint: #a08b74;
+  /* 金 gold leaf: the one accent */
+  --accent: #d4af61;
+  --accent-strong: #e6c67c;
+  --accent-soft: rgba(212, 175, 97, 0.14);
+  --on-accent: #241a12;
+  /* 朱漆 red lacquer: the seal, and anything wrong */
+  --lacquer: #b8312f;
+  --on-lacquer: #f6e3c4;
+  --danger: #ea6a55;
+  --danger-soft: rgba(234, 106, 85, 0.14);
+  /* Status colours (always paired with an icon or word, never colour alone) */
+  --good: #8fbf7a;
+  --warn: #e3ab4f;
+  --info: #93abcb;
+  --bad: #ea6a55;
+  --shadow: rgba(0, 0, 0, 0.45);
+  --radius: 4px;
+  --font: 'Noto Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Cormorant Garamond', 'Noto Serif', Georgia, serif;
+  /* Chinese characters: brush script for the seal and big labels, a clear serif for small badges */
+  --font-brush: 'Zhi Mang Xing', 'Noto Serif SC', 'Songti SC', serif;
+  --font-cjk: 'Noto Serif SC', 'Songti SC', 'SimSun', serif;
+  /* 窗棂 lattice-window band (gold), used under the toolbar */
+  --lattice: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M0 4L6 0.5L12 4L6 7.5Z M6 0.5V7.5' fill='none' stroke='%23d4af61' stroke-width='0.9'/%3E%3C/svg%3E");
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -61,7 +88,7 @@ html, body {
 
 .mode-switch { display: inline-flex; background: var(--bg); border-radius: 999px; padding: 3px; border: 1px solid var(--panel-border); }
 .mode { border: 0; background: transparent; padding: 5px 14px; border-radius: 999px; font: inherit; color: var(--ink-soft); cursor: pointer; }
-.mode.active { background: var(--panel); color: var(--ink); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08); font-weight: 600; }
+.mode.active { background: var(--input-bg); color: var(--accent-strong); box-shadow: 0 1px 2px var(--shadow), inset 0 0 0 1px var(--accent-soft); font-weight: 600; }
 .mode:disabled { cursor: not-allowed; opacity: 0.55; }
 
 /* ---------- Buttons ---------- */
@@ -80,7 +107,7 @@ html, body {
 .btn:focus-visible, .palette-item:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .btn-small { padding: 4px 8px; font-size: 12px; }
 .btn-danger { color: var(--danger); }
-.btn-danger:hover:not(:disabled) { border-color: var(--danger); background: #fbeeea; }
+.btn-danger:hover:not(:disabled) { border-color: var(--danger); background: var(--danger-soft); }
 
 /* ---------- Side panels ---------- */
 .panel { background: var(--panel); padding: 14px; overflow-y: auto; }
@@ -97,7 +124,7 @@ html, body {
   cursor: pointer;
 }
 .palette-item:hover { border-color: var(--accent); background: var(--accent-soft); }
-.swatch { width: 14px; height: 14px; border-radius: 3px; flex: none; border: 1px solid rgba(0, 0, 0, 0.15); }
+.swatch { width: 14px; height: 14px; border-radius: 3px; flex: none; border: 1px solid var(--panel-border); }
 .swatch-round { border-radius: 50%; }
 
 /* ---------- Form fields ---------- */
@@ -131,8 +158,8 @@ input[type='text'], input[type='number'], select {
 
 .toast {
   position: fixed; left: 50%; bottom: 44px; transform: translateX(-50%);
-  background: var(--ink); color: #fff; padding: 9px 16px; border-radius: 999px;
-  font-size: 13px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  background: var(--ink); color: var(--bg); padding: 9px 16px; border-radius: 999px;
+  font-size: 13px; box-shadow: 0 4px 16px var(--shadow);
   transition: opacity 0.4s; z-index: 10;
 }
 .toast-error { background: var(--danger); }
@@ -145,10 +172,10 @@ input[type='text'], input[type='number'], select {
   max-width: min(520px, calc(100% - 32px));
   background: var(--panel); border: 1px solid var(--panel-border); border-left: 4px solid var(--accent);
   border-radius: var(--radius); padding: 9px 14px; font-size: 13px; line-height: 1.4;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08); pointer-events: none;
+  box-shadow: 0 2px 10px var(--shadow); pointer-events: none;
 }
-.btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-.btn-primary:hover:not(:disabled) { background: #a95a38; border-color: #a95a38; }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
+.btn-primary:hover:not(:disabled) { background: var(--accent-strong); border-color: var(--accent-strong); }
 .sim-controls { margin-top: 0; margin-bottom: 12px; gap: 6px; }
 .sim-controls .btn { flex: 1; padding: 6px 4px; }
 .sim-controls .btn-primary { flex: 1.4; }
@@ -157,7 +184,7 @@ input[type='range'] { width: 100%; accent-color: var(--accent); }
 
 .legend { display: flex; flex-direction: column; gap: 10px; }
 .legend-row { display: flex; gap: 10px; align-items: flex-start; }
-.legend-swatch { width: 22px; height: 22px; border-radius: 5px; flex: none; border: 1px solid rgba(0, 0, 0, 0.15); }
+.legend-swatch { width: 22px; height: 22px; border-radius: 5px; flex: none; border: 1px solid var(--panel-border); }
 .legend-title { font-size: 12.5px; font-weight: 600; }
 
 .sim-stats .field-label { margin-top: 8px; }
@@ -170,13 +197,13 @@ input[type='range'] { width: 100%; accent-color: var(--accent); }
 .score-head { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
 .score-number {
   width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center;
-  font-size: 20px; font-weight: 700; color: #fff; background: var(--score-colour); flex: none;
+  font-size: 20px; font-weight: 700; color: var(--on-accent); background: var(--score-colour); flex: none;
 }
 .score-label { font-weight: 650; font-size: 15px; color: var(--score-colour); }
-.score-great { --score-colour: #4f7d5a; }
-.score-good { --score-colour: #6f8f4a; }
-.score-mid { --score-colour: #b07a2a; }
-.score-low { --score-colour: #a8432c; }
+.score-great { --score-colour: var(--accent); }
+.score-good { --score-colour: var(--good); }
+.score-mid { --score-colour: var(--warn); }
+.score-low { --score-colour: var(--bad); }
 .score-bars { display: flex; flex-direction: column; gap: 5px; }
 .score-bar-row { display: grid; grid-template-columns: 104px 1fr 26px; align-items: center; gap: 8px; font-size: 11.5px; color: var(--ink-soft); }
 .score-bar { height: 7px; border-radius: 4px; background: var(--bg); border: 1px solid var(--panel-border); overflow: hidden; }
@@ -210,12 +237,12 @@ input[type='range'] { width: 100%; accent-color: var(--accent); }
 }
 .status-icon {
   flex: none; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center;
-  font-size: 11px; font-weight: 800; color: #fff; background: var(--status-colour); margin-top: 1px;
+  font-size: 11px; font-weight: 800; color: var(--on-accent); background: var(--status-colour); margin-top: 1px;
 }
-.status-bad { --status-colour: #a8432c; }
-.status-warn { --status-colour: #b07a2a; }
-.status-info { --status-colour: #5e7a96; }
-.status-good { --status-colour: #4f7d5a; }
+.status-bad { --status-colour: var(--bad); }
+.status-warn { --status-colour: var(--warn); }
+.status-info { --status-colour: var(--info); }
+.status-good { --status-colour: var(--good); }
 .report-item-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .report-item-message { font-size: 13px; line-height: 1.35; }
 .report-item-meta { font-size: 11px; color: var(--ink-faint); }
@@ -236,16 +263,16 @@ input[type='range'] { width: 100%; accent-color: var(--accent); }
   position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
   display: flex; align-items: center; gap: 8px; max-width: calc(100% - 32px);
   background: var(--panel); border: 1px solid var(--accent); border-radius: 999px;
-  padding: 6px 6px 6px 16px; box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12); font-size: 13px;
+  padding: 6px 6px 6px 16px; box-shadow: 0 4px 18px var(--shadow); font-size: 13px;
 }
 .fix-bar[hidden] { display: none; }
 .fix-bar-text { flex: 1; min-width: 0; }
-.fix-bar-score.up, .delta.up { color: #4f7d5a; font-weight: 600; }
-.fix-bar-score.down, .delta.down { color: #a8432c; font-weight: 600; }
+.fix-bar-score.up, .delta.up { color: var(--good); font-weight: 600; }
+.fix-bar-score.down, .delta.down { color: var(--bad); font-weight: 600; }
 
 /* ---------- Before/after modal ---------- */
-.modal-backdrop { position: fixed; inset: 0; background: rgba(40, 34, 28, 0.45); display: grid; place-items: center; z-index: 20; padding: 16px; }
-.modal { background: var(--panel); border-radius: 12px; padding: 18px; width: min(980px, 100%); max-height: 100%; overflow: auto; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25); }
+.modal-backdrop { position: fixed; inset: 0; background: rgba(10, 6, 5, 0.65); display: grid; place-items: center; z-index: 20; padding: 16px; }
+.modal { background: var(--panel); border-radius: 12px; padding: 18px; width: min(980px, 100%); max-height: 100%; overflow: auto; box-shadow: 0 10px 40px var(--shadow); border: 1px solid var(--panel-border); }
 .modal-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
 .modal-head h2 { margin: 0; font-size: 17px; flex: 1; }
 .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
@@ -307,7 +334,57 @@ input[type='range'] { width: 100%; accent-color: var(--accent); }
   .modal { padding: 14px; }
 }
 .fix-bar-score { white-space: nowrap; }
-.legend-gradient { height: 12px; border-radius: 6px; border: 1px solid rgba(0, 0, 0, 0.12); }
+.legend-gradient { height: 12px; border-radius: 6px; border: 1px solid var(--panel-border); }
 .legend-scale { display: flex; justify-content: space-between; font-size: 11px; color: var(--ink-faint); margin: -6px 0 2px; }
 
 .particle-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
+
+/* ---------- Lacquer & Gold details ---------- */
+/* Headings in the display serif, a touch of gold. */
+.panel-title { font-family: var(--font-display); font-size: 19px; font-weight: 600; letter-spacing: 0.01em; color: var(--accent-strong); }
+.panel h3 { color: var(--ink-faint); }
+
+/* Toolbar with a gold 窗棂 lattice band along its bottom edge. */
+.toolbar { position: relative; padding-bottom: 16px; border-bottom: 0; }
+.toolbar::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 8px;
+  background: var(--lattice) repeat-x; background-size: auto 8px; opacity: 0.75; pointer-events: none;
+}
+
+/* Seal-stamp logo: a red lacquer square with 气 (chi) in brush script. */
+.brand { font-family: var(--font-display); font-size: 21px; font-weight: 600; letter-spacing: 0.02em; color: var(--ink); }
+.seal {
+  width: 32px; height: 32px; border-radius: 4px; flex: none;
+  display: grid; place-items: center;
+  background: var(--lacquer); color: var(--on-lacquer);
+  font-family: var(--font-brush); font-size: 22px; line-height: 1;
+  box-shadow: inset 0 0 0 2px var(--lacquer), inset 0 0 0 3.5px var(--on-lacquer);
+}
+
+/* Mode tabs carry a trigram: ☶ mountain (stillness) for Edit, ☴ wind for Simulate. */
+.mode .trigram { font-size: 15px; line-height: 1; margin-right: 6px; color: var(--accent); }
+.mode { display: inline-flex; align-items: center; }
+
+/* Element badges: the five elements' characters on their colours. */
+.el-badge {
+  width: 18px; height: 18px; border-radius: 3px; flex: none; display: grid; place-items: center;
+  font-family: var(--font-cjk); font-size: 12px; font-weight: 700; line-height: 1; color: #fff8ec;
+}
+.el-wood { background: #5f7f45; }
+.el-fire { background: #b8312f; }
+.el-earth { background: #a2772f; }
+.el-metal { background: #7b776f; }
+.el-water { background: #3b6a92; }
+.palette-item.is-opening .el-badge { background: var(--input-bg); color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+
+/* Score: a round seal with the score, plus its character (和 良 慎 乱). */
+.score-number { box-shadow: inset 0 0 0 3px var(--score-colour), inset 0 0 0 4.5px var(--on-accent); }
+.score-label { display: flex; align-items: center; gap: 6px; font-family: var(--font-display); font-size: 18px; }
+.score-char { font-family: var(--font-brush); font-size: 22px; line-height: 1; }
+.score-bar-row { grid-template-columns: 16px 96px 1fr 26px; }
+.score-bar-char { font-family: var(--font-cjk); font-size: 12px; color: var(--accent); text-align: center; }
+
+/* Form controls on lacquer. */
+input[type='text'], input[type='number'], select { background: var(--input-bg); color: var(--ink); }
+.checkbox input, input[type='range'] { accent-color: var(--accent); }
+.report-item.open { background: var(--input-bg); }

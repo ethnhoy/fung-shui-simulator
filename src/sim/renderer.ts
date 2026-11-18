@@ -74,8 +74,10 @@ export const bandOf = (level: number) => {
   return PARTICLE_BANDS.length - 1;
 };
 
-const FLOOR = '#f4ece0';
-const HEAT_ALPHA = 0.5;
+/** The lacquered floor colour (matches THEME.floor). */
+const FLOOR = '#2c211d';
+/** Heatmap opacity: a little stronger than on a light floor so the colours glow on dark lacquer. */
+const HEAT_ALPHA = 0.62;
 
 function makeCanvas(w: number, h: number): HTMLCanvasElement {
   const c = document.createElement('canvas');
@@ -231,8 +233,8 @@ export class FlowRenderer {
       t.drawImage(mask, dx, dy, dw, dh);
       lctx.drawImage(tmp, 0, 0);
     };
-    overlay(sha, patternTile('hatch', 'rgba(150, 45, 30, 0.45)'));
-    overlay(si, patternTile('dots', 'rgba(60, 80, 105, 0.45)'));
+    overlay(sha, patternTile('hatch', 'rgba(255, 214, 196, 0.32)'));
+    overlay(si, patternTile('dots', 'rgba(196, 212, 232, 0.38)'));
     return layer;
   }
 
@@ -240,7 +242,7 @@ export class FlowRenderer {
     const ctx = this.ctx;
     const every = Math.max(2, Math.round(20 / grid.cellCm)); // one arrow per ~20 cm
     const maxLen = 18; // cm at full inlet speed
-    ctx.strokeStyle = 'rgba(58, 53, 48, 0.55)';
+    ctx.strokeStyle = 'rgba(241, 230, 212, 0.55)';
     ctx.lineWidth = 1.1 / scale;
     ctx.beginPath();
     for (let j = 0; j < grid.ny; j += every) {

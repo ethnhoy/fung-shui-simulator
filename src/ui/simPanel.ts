@@ -9,9 +9,9 @@ import { h } from './dom';
 
 /** Legend swatch backgrounds: colour plus the same pattern used on the heatmap. */
 const SWATCH_STYLE: Record<ChiClass, string> = {
-  sha: `background: repeating-linear-gradient(-45deg, ${CHI_COLOURS.sha.css} 0 3px, #f1c2b8 3px 6px)`,
+  sha: `background: repeating-linear-gradient(-45deg, ${CHI_COLOURS.sha.css} 0 3px, #5a1f1a 3px 6px)`,
   sheng: `background: ${CHI_COLOURS.sheng.css}`,
-  si: `background: radial-gradient(circle, #3c5069 1.2px, transparent 1.6px) 0 0 / 6px 6px, #c5d0db`,
+  si: `background: radial-gradient(circle, #c4d4e8 1.2px, transparent 1.6px) 0 0 / 6px 6px, #3a4656`,
 };
 /** A text symbol per class so the legend never relies on colour alone. */
 const SYMBOL: Record<ChiClass, string> = { sha: '»', sheng: '∿', si: '·' };

@@ -88,8 +88,8 @@ export class Editor {
       this.roomGroup, this.baguaGroup, this.spotGroup, this.furnitureGroup, this.openingGroup,
       this.ghostGroup, this.baguaLabelGroup, this.highlightGroup, this.handleGroup,
     );
-    this.spotLabel.add(new Konva.Tag({ fill: THEME.ink, cornerRadius: 4, opacity: 0.9 }));
-    this.spotLabel.add(new Konva.Text({ text: '', fill: '#fff', padding: 5, fontSize: 12 }));
+    this.spotLabel.add(new Konva.Tag({ fill: THEME.tooltip, stroke: THEME.handleStroke, strokeWidth: 1, cornerRadius: 4, opacity: 0.95 }));
+    this.spotLabel.add(new Konva.Text({ text: '', fill: THEME.ink, padding: 5, fontSize: 12 }));
     this.transformer = new Konva.Transformer({
       rotateEnabled: true,
       flipEnabled: false,
@@ -111,8 +111,8 @@ export class Editor {
     this.layer.add(this.world, this.transformer, this.spotLabel);
     this.stage.add(this.layer);
 
-    this.markerTooltip.add(new Konva.Tag({ fill: THEME.ink, cornerRadius: 4, opacity: 0.92 }));
-    this.markerTooltip.add(new Konva.Text({ text: '', fill: '#fff', padding: 6, fontSize: 12 }));
+    this.markerTooltip.add(new Konva.Tag({ fill: THEME.tooltip, stroke: THEME.handleStroke, strokeWidth: 1, cornerRadius: 4, opacity: 0.95 }));
+    this.markerTooltip.add(new Konva.Text({ text: '', fill: THEME.ink, padding: 6, fontSize: 12 }));
     this.markerLayer.add(this.markerWorld, this.markerTooltip);
     this.stage.add(this.markerLayer);
 

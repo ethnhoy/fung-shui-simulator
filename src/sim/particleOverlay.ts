@@ -11,9 +11,9 @@ import { ParticleSystem, type ChiStream, type Particle, type Tint } from './part
 import { bandOf, PARTICLE_BANDS, type ViewTransform } from './renderer';
 import type { RasterGrid } from './types';
 
-/** Stream tints: chi draining out of the door is a dusky brown (arrows and mirrors use the red end of the chi ramp). */
+/** Stream tints: chi draining out of the door is a pale dusky brown, visible on the dark floor (arrows and mirrors use the red end of the chi ramp). */
 const TINT_CSS: Record<Exclude<Tint, 'flow'>, string> = {
-  coffin: 'rgb(110, 84, 70)',
+  coffin: 'rgb(176, 146, 124)',
 };
 
 export class ParticleOverlay {

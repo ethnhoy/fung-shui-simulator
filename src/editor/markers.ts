@@ -21,7 +21,8 @@ export interface MarkerItem {
   marker: IssueMarker;
 }
 
-const COLOUR = { bad: '#b5402a', warn: '#b9822b' } as const;
+// Red lacquer for problems, amber for warnings (each badge also has its own icon).
+const COLOUR = { bad: '#c4382f', warn: '#c98f2e' } as const;
 const flat = (pts: Point[]) => pts.flatMap((p) => [p.x, p.y]);
 const crisp = { strokeScaleEnabled: false } as const;
 
@@ -74,7 +75,7 @@ function drawBadge(
 ): Konva.Group {
   const colour = COLOUR[item.status === 'bad' ? 'bad' : 'warn'];
   const badge = new Konva.Group({ x: at.x, y: at.y, listening: true });
-  badge.add(new Konva.Circle({ radius: 9 * px, fill: colour, stroke: '#fff', strokeWidth: 2, ...crisp, shadowColor: 'rgba(0,0,0,0.25)', shadowBlur: 4 }));
+  badge.add(new Konva.Circle({ radius: 9 * px, fill: colour, stroke: '#f1e6d4', strokeWidth: 2, ...crisp, shadowColor: 'rgba(0,0,0,0.25)', shadowBlur: 4 }));
   badge.add(new Konva.Text({
     text: item.status === 'bad' ? '✕' : '!', fontSize: 11 * px, fontStyle: 'bold', fill: '#fff',
     width: 18 * px, height: 18 * px, offsetX: 9 * px, offsetY: 9 * px, align: 'center', verticalAlign: 'middle', listening: false,

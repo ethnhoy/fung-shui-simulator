@@ -14,7 +14,7 @@ export function capturePlan(editor: Editor, flowCanvas: HTMLCanvasElement, parti
   out.width = plan.width;
   out.height = plan.height;
   const ctx = out.getContext('2d')!;
-  ctx.fillStyle = '#f6f1ea';
+  ctx.fillStyle = '#1d1614'; // the page background (Lacquer & Gold)
   ctx.fillRect(0, 0, out.width, out.height);
   // The flow canvas is drawn at device resolution; scale it to the editor's size.
   if (flowCanvas.width > 0) ctx.drawImage(flowCanvas, 0, 0, out.width, out.height);

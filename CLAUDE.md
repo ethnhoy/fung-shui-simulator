@@ -152,7 +152,10 @@ If a desk exists, check its commanding position (can see the door, back not to t
 - Two modes: **Edit** and **Simulate**. Changing the layout in Simulate mode re-runs the sim automatically.
 - Include a starter sample bedroom that loads on first visit, so the app is impressive immediately.
 - About panel: what feng shui is, how chi is modelled, and the disclaimer: "Feng shui is a traditional practice; this tool is for design inspiration, not a scientific or medical claim."
-- Visual style: calm, warm and minimal. Accessible colour choices: don't rely on red/green alone; add icons or patterns.
+- Visual style: **"Lacquer & Gold" (漆器金)**, a traditional Chinese look that stays clean and easy to navigate. Dark red-black lacquer surfaces, gold leaf as the one accent, red lacquer for the seal and for problems, ivory text. CSS tokens live in `ui/styles.css`, the canvas palette in `ui/theme.ts` (keep them in step).
+  - Type: Noto Sans for reading, Cormorant Garamond for titles, Zhi Mang Xing (brush) and Noto Serif SC for Chinese characters. The Chinese fonts are loaded with Google Fonts' `text=` list of only the characters used (in `index.html`): regenerate it when adding characters.
+  - Motifs: 气 seal-stamp logo, gold 窗棂 lattice band under the toolbar, trigram icons on the mode tabs (☶ Edit, ☴ Simulate), element characters 木火土金水 on palette items, a character per score label (和 良 慎 乱) and per category. Chinese always sits beside an English label.
+  - Accessible colour choices: don't rely on red/green alone; add icons or patterns.
 
 ## Portfolio polish
 - README with a screenshot or GIF, a live demo link, the features, how the simulation works (short LBM explainer), the tech stack, and run instructions.

@@ -19,10 +19,11 @@ const flat = (pts: Point[]) => pts.flatMap((p) => [p.x, p.y]);
 const crisp = { strokeScaleEnabled: false } as const;
 
 export const HIGHLIGHT_COLOURS: Record<Status, string> = {
-  bad: '#a8432c',
-  warn: '#b07a2a',
-  info: '#5e7a96',
-  good: '#4f7d5a',
+  // Bright enough to read on the dark lacquer floor.
+  bad: '#ef6a52',
+  warn: '#e3ab4f',
+  info: '#93abcb',
+  good: '#8fbf7a',
 };
 
 export function drawHighlight(shapes: HighlightShape[], status: Status, px: number): Konva.Group {
@@ -83,7 +84,7 @@ export function drawGhost(diff: LayoutDiff, px: number): Konva.Group {
   }
   for (const f of diff.removed) {
     const c = rectCorners(f);
-    g.add(new Konva.Line({ points: flat(c), closed: true, stroke: HIGHLIGHT_COLOURS.bad, strokeWidth: 2.5, ...crisp, dash: [6, 4], fill: 'rgba(255,250,243,0.7)' }));
+    g.add(new Konva.Line({ points: flat(c), closed: true, stroke: HIGHLIGHT_COLOURS.bad, strokeWidth: 2.5, ...crisp, dash: [6, 4], fill: 'rgba(29, 22, 20, 0.75)' }));
     g.add(new Konva.Line({ points: [c[0].x, c[0].y, c[2].x, c[2].y], stroke: HIGHLIGHT_COLOURS.bad, strokeWidth: 2, ...crisp }));
     g.add(new Konva.Line({ points: [c[1].x, c[1].y, c[3].x, c[3].y], stroke: HIGHLIGHT_COLOURS.bad, strokeWidth: 2, ...crisp }));
   }
@@ -130,7 +131,7 @@ export function drawBestSpot(cells: SpotCell[], step: number, px: number, done: 
     for (const c of scored.filter((x) => x.score === top).slice(0, 6)) {
       g.add(new Konva.Star({
         x: c.x, y: c.y, numPoints: 5, innerRadius: 4 * px, outerRadius: 9 * px,
-        fill: '#fffaf3', stroke: '#3a3530', strokeWidth: 1.5, ...crisp,
+        fill: '#e6c67c', stroke: '#0f0b0a', strokeWidth: 1.5, ...crisp,
       }));
     }
   }
@@ -147,8 +148,8 @@ export function drawBagua(zones: BaguaZone[], px: number, part: 'grid' | 'labels
   for (const z of zones) {
     if (part === 'grid') {
       g.add(new Konva.Line({
-      points: flat(z.polygon), closed: true, stroke: '#7a6a9a', strokeWidth: 1.2, ...crisp, dash: [5, 4],
-      fill: (z.row + z.col) % 2 === 0 ? 'rgba(122, 106, 154, 0.07)' : 'rgba(122, 106, 154, 0.02)',
+      points: flat(z.polygon), closed: true, stroke: 'rgba(212, 175, 97, 0.55)', strokeWidth: 1.2, ...crisp, dash: [5, 4],
+      fill: (z.row + z.col) % 2 === 0 ? 'rgba(212, 175, 97, 0.07)' : 'rgba(212, 175, 97, 0.02)',
       }));
       continue;
     }
@@ -156,10 +157,10 @@ export function drawBagua(zones: BaguaZone[], px: number, part: 'grid' | 'labels
     const ys = z.polygon.map((p) => p.y);
     const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys);
     const label = new Konva.Label({ x: (minX + maxX) / 2, y: minY + 6 * px, opacity: 0.92 });
-    label.add(new Konva.Tag({ fill: '#f3eff8', cornerRadius: 3 * px, pointerDirection: 'none' }));
+    label.add(new Konva.Tag({ fill: '#261c19', stroke: 'rgba(212, 175, 97, 0.5)', strokeWidth: 0.6 * px, cornerRadius: 3 * px, pointerDirection: 'none' }));
     label.add(new Konva.Text({
       text: z.insideFraction < 0.5 ? `${z.name} (missing)` : z.name,
-      fontSize, fill: '#5d4f7a', fontStyle: 'bold', padding: 2 * px,
+      fontSize, fill: '#e6c67c', fontStyle: 'bold', padding: 2 * px,
     }));
     label.offsetX(label.width() / 2); // centre it horizontally in the zone
     g.add(label);

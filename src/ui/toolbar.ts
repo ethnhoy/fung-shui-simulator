@@ -49,7 +49,10 @@ export function buildToolbar(root: HTMLElement, { store, getUnits, setUnits, set
 
   // Edit / Simulate switch. Both modes allow moving furniture; Simulate adds the chi flow.
   const modeButtons = (['edit', 'simulate'] as AppMode[]).map((m) => {
-    const btn = h('button', { type: 'button', class: 'mode', role: 'tab', 'data-mode': m }, m === 'edit' ? 'Edit' : 'Simulate');
+    // Each mode carries a bagua trigram: ☶ 艮 mountain (stillness) for Edit, ☴ 巽 wind for Simulate.
+    const btn = h('button', { type: 'button', class: 'mode', role: 'tab', 'data-mode': m },
+      h('span', { class: 'trigram', 'aria-hidden': 'true' }, m === 'edit' ? '☶' : '☴'),
+      m === 'edit' ? 'Edit' : 'Simulate');
     btn.addEventListener('click', () => selectMode(m));
     return btn;
   });
@@ -73,7 +76,8 @@ export function buildToolbar(root: HTMLElement, { store, getUnits, setUnits, set
   refreshUnits();
 
   root.replaceChildren(
-    h('div', { class: 'brand' }, h('span', { class: 'brand-mark', 'aria-hidden': 'true' }, '◐'), 'Chi Flow'),
+    // The logo is a seal stamp with 气 (chi), the way a painter signs their work.
+    h('div', { class: 'brand' }, h('span', { class: 'seal', 'aria-hidden': 'true' }, '气'), 'Chi Flow'),
     modeSwitch,
     h('div', { class: 'toolbar-spacer' }),
     undoBtn,

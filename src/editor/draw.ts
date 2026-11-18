@@ -321,7 +321,7 @@ export function drawFurniture(f: Furniture, px: number): Konva.Group {
   const { hx, hy } = aabbHalfExtents(f);
   const span = hx * 2;
   const label = new Konva.Text({
-    text: name, fontSize, fill: f.type === 'tv' ? '#fff' : THEME.ink,
+    text: name, fontSize, fill: THEME.ink,
     width: span, align: 'center', offsetX: span / 2, offsetY: fontSize / 2,
     y: f.type === 'bed' ? d * 0.12 : 0, rotation: -f.rotation, listening: false,
   });
