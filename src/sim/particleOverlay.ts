@@ -1,8 +1,7 @@
 /**
  * The particle overlay: a see-through canvas on top of the plan that draws
- * every particle (flow particles in Simulate mode, problem streams in both
- * modes) with fading trails. It has its own animation loop, which only runs
- * while there is something to animate.
+ * every particle with fading trails. Particles only exist in Simulate mode;
+ * the animation loop runs only while simulating.
  *
  * The canvas ignores the mouse (CSS pointer-events: none), so you can still
  * click and drag furniture underneath it.
@@ -23,12 +22,13 @@ export class ParticleOverlay {
   private dpr = 1;
   private rafId = 0;
   private running = false;
-  /** Simulate mode: flow particles are on. */
+  /** Particles only exist while simulating. */
   private simulating = false;
   /** Paused (Simulate mode's Pause button) freezes everything. */
   playing = true;
   speed = 1;
-  showFlowParticles = true;
+  /** The "Particles & trails" checkbox. */
+  showParticles = true;
 
   constructor(
     private canvas: HTMLCanvasElement,
@@ -41,14 +41,17 @@ export class ParticleOverlay {
 
   setStreams(streams: ChiStream[]): void {
     this.particles.setStreams(streams);
-    this.wake();
   }
 
-  /** Simulate mode starts/stops following a grid (null = Edit mode, streams only). */
+  /** Simulate mode starts following a grid; null (Edit mode, or no flow) clears every particle. */
   setGrid(grid: RasterGrid | null): void {
     this.simulating = grid !== null;
     this.particles.setGrid(grid);
-    this.wake();
+    if (this.simulating) this.wake();
+    else {
+      this.stop();
+      this.draw(); // clear the canvas
+    }
   }
 
   setField(ux: Float32Array, uy: Float32Array): void {
@@ -77,15 +80,11 @@ export class ParticleOverlay {
   private frame = (): void => {
     if (this.playing) {
       const s = this.speed;
-      this.particles.update(this.simulating ? FLOW_VIEW.stepsPerFrame * s : 0, s);
+      this.particles.update(FLOW_VIEW.stepsPerFrame * s, s);
     }
     this.draw();
-    // Keep going while simulating or while any particles/streams exist.
-    if (this.simulating || this.particles.particles.length > 0 || this.particles.hasStreams) {
-      this.rafId = requestAnimationFrame(this.frame);
-    } else {
-      this.running = false;
-    }
+    if (this.simulating) this.rafId = requestAnimationFrame(this.frame);
+    else this.running = false;
   };
 
   stop(): void {
@@ -113,10 +112,7 @@ export class ParticleOverlay {
     const view = this.getView();
     // Draw in room centimetres, like the editor.
     ctx.setTransform(this.dpr * view.scale, 0, 0, this.dpr * view.scale, this.dpr * view.x, this.dpr * view.y);
-    const visible = this.showFlowParticles
-      ? this.particles.particles
-      : this.particles.particles.filter((p) => p.guide || p.ttl !== undefined);
-    drawParticles(ctx, visible, view.scale);
+    if (this.showParticles) drawParticles(ctx, this.particles.particles, view.scale);
   }
 }
 
@@ -155,8 +151,8 @@ export function drawParticles(ctx: CanvasRenderingContext2D, particles: Particle
     ctx.fillStyle = css;
     ctx.beginPath();
     for (const p of group) {
-      // Sparks shrink as they die out.
-      const r = (p.ttl !== undefined ? 1.2 + p.ttl * 0.08 : 2.2) / scale;
+      // Chi being pushed at the bed is drawn a touch larger so it stands out.
+      const r = (p.pushed ? 2.6 : 2.2) / scale;
       ctx.moveTo(p.x + r, p.y);
       ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
     }

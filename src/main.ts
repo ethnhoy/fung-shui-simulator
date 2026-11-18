@@ -41,7 +41,7 @@ buildPalette($('palette'), store);
 const refreshProperties = buildProperties($('properties'), store, getUnits);
 // ---------------------------------------------------------------- Simulate mode
 
-// One particle layer on top of the plan: flow particles in Simulate mode, problem streams in both modes.
+// One particle layer on top of the plan (Simulate mode only): chi from the door, including chi pushed at the bed by problems.
 const overlay = new ParticleOverlay($<HTMLCanvasElement>('particle-canvas'), () => editor.getView());
 const sim = new SimController($<HTMLCanvasElement>('flow-canvas'), store, () => editor.getView(), overlay);
 buildSimPanel($('sim-panel'), sim);

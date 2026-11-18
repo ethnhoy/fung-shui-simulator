@@ -4,7 +4,7 @@
  *                                                          └→ particle overlay
  * It also owns the heatmap's animation loop (requestAnimationFrame, which the browser
  * calls once per screen refresh) and re-runs the simulation when the layout changes.
- * Particles live in the shared ParticleOverlay, which also draws problem streams in Edit mode.
+ * Particles live in the shared ParticleOverlay (Simulate mode only).
  */
 import type { Store } from '../editor/store';
 import { roomPolygon } from '../geometry/room';
@@ -88,7 +88,7 @@ export class SimController {
     this.send({ type: 'pause' });
     cancelAnimationFrame(this.rafId);
     this.renderer.clear();
-    // Back to Edit mode: no flow particles, but problem streams keep playing.
+    // Back to Edit mode: particles only exist while simulating.
     this.overlay.setGrid(null);
     this.overlay.playing = true;
     this.setStatus({ active: false, running: false });
@@ -152,7 +152,7 @@ export class SimController {
   }
 
   reset(): void {
-    this.overlay.particles.clearFlow();
+    this.overlay.particles.clear();
     this.restart();
   }
 
@@ -169,7 +169,7 @@ export class SimController {
 
   setOptions(patch: Partial<RenderOptions>): void {
     this.options = { ...this.options, ...patch };
-    this.overlay.showFlowParticles = this.options.particles;
+    this.overlay.showParticles = this.options.particles;
   }
 
   /** Higher quality has 4× the cells, so run fewer steps per batch to keep the page responsive. */
