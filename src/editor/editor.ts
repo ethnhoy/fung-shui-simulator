@@ -41,6 +41,8 @@ export class Editor {
   private draggingHandle = false;
   /** Holding Shift while dragging turns snapping off. */
   private shiftDown = false;
+  /** In Simulate mode the floor is transparent so the flow layer shows through. */
+  private simulateMode = false;
 
   constructor(
     private container: HTMLDivElement,
@@ -85,6 +87,16 @@ export class Editor {
     this.resize();
   }
 
+  /** Where the room is drawn on screen, so the flow canvas can line up exactly underneath. */
+  getView(): { x: number; y: number; scale: number } {
+    return { x: this.world.x(), y: this.world.y(), scale: this.pxPerCm };
+  }
+
+  setSimulateMode(on: boolean): void {
+    this.simulateMode = on;
+    this.render();
+  }
+
   /** Size of one screen pixel in cm. */
   private get px(): number {
     return 1 / this.pxPerCm;
@@ -127,7 +139,7 @@ export class Editor {
     const selected = this.store.selectedId;
 
     this.roomGroup.destroyChildren();
-    this.roomGroup.add(drawRoom(room, this.px, this.getUnits()));
+    this.roomGroup.add(drawRoom(room, this.px, this.getUnits(), this.simulateMode));
 
     this.furnitureGroup.destroyChildren();
     // Rugs lie on the floor, so draw them underneath everything else.

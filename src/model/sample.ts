@@ -5,6 +5,7 @@
  *  + solid wall behind the headboard, matching nightstands
  *  - a mirror facing the bed
  *  - a desk in the bedroom (adds yang energy)
+ *  - a stagnant corner by the wardrobe (shows up in the simulation)
  */
 import { CATALOG } from './catalog';
 import type { Furniture, FurnitureType, Layout } from './types';
@@ -40,8 +41,9 @@ export function sampleLayout(): Layout {
         isOpen: true, isMainEntrance: true, hinge: 'start', swingsInward: true,
       },
       {
-        // Right wall (wall 1 runs top-to-bottom).
-        id: 'window-1', kind: 'window', wallIndex: 1, offset: 280, width: 100,
+        // Top wall (wall 0 runs left-to-right), to the right of the headboard,
+        // so chi flows from the door up the right side of the room and out here.
+        id: 'window-1', kind: 'window', wallIndex: 0, offset: 330, width: 100,
         isOpen: true, isMainEntrance: false, hinge: 'start', swingsInward: true,
       },
     ],

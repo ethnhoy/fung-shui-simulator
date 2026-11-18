@@ -22,14 +22,37 @@ const crisp = { strokeScaleEnabled: false, strokeWidth: 1.5 } as const;
 
 // ---------------------------------------------------------------- Room
 
-export function drawRoom(room: Room, px: number, units: UnitSystem): Konva.Group {
+/**
+ * @param transparentFloor In Simulate mode the floor is left see-through so the
+ *   flow canvas underneath (heatmap and particles) shows through.
+ */
+export function drawRoom(room: Room, px: number, units: UnitSystem, transparentFloor = false): Konva.Group {
   const g = new Konva.Group({ name: 'room', listening: false });
   const inner = roomPolygon(room);
   const outer = offsetPolygon(inner, room.wallThickness);
 
-  // Walls = the outer outline filled dark, with the floor drawn on top.
-  g.add(new Konva.Line({ points: flat(outer), closed: true, fill: THEME.wall }));
-  g.add(new Konva.Line({ points: flat(inner), closed: true, fill: THEME.floor }));
+  if (!transparentFloor) {
+    // Walls = the outer outline filled dark, with the floor drawn on top.
+    g.add(new Konva.Line({ points: flat(outer), closed: true, fill: THEME.wall }));
+    g.add(new Konva.Line({ points: flat(inner), closed: true, fill: THEME.floor }));
+  } else {
+    // Simulate mode: draw only the wall band (outer outline minus inner outline,
+    // using the canvas "even-odd" fill rule) and leave the floor see-through.
+    g.add(
+      new Konva.Shape({
+        sceneFunc: (ctx) => {
+          const native = ctx._context; // the plain CanvasRenderingContext2D underneath Konva
+          native.beginPath();
+          for (const ring of [outer, inner]) {
+            ring.forEach((p, i) => (i === 0 ? native.moveTo(p.x, p.y) : native.lineTo(p.x, p.y)));
+            native.closePath();
+          }
+          native.fillStyle = THEME.wall;
+          native.fill('evenodd');
+        },
+      }),
+    );
+  }
 
   // A faint 50 cm grid on the floor, clipped to the room outline.
   g.add(

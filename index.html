@@ -10,9 +10,15 @@
   <body>
     <div class="app">
       <header id="toolbar" class="toolbar"></header>
-      <aside id="palette" class="panel panel-left" aria-label="Furniture palette"></aside>
+      <aside class="panel panel-left">
+        <div id="palette" aria-label="Furniture palette"></div>
+        <div id="sim-panel" aria-label="Simulation controls" hidden></div>
+      </aside>
       <main class="canvas-area">
+        <!-- The flow layer (heatmap + particles) sits underneath the Konva editor layer. -->
+        <canvas id="flow-canvas" class="flow-canvas"></canvas>
         <div id="canvas-host" class="canvas-host"></div>
+        <div id="sim-banner" class="sim-banner" role="status" hidden></div>
       </main>
       <aside id="properties" class="panel panel-right" aria-label="Properties"></aside>
       <footer class="statusbar">

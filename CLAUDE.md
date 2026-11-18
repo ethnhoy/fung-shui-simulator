@@ -77,6 +77,8 @@ Rules must not depend on the renderer. The sim and the rule engine both read the
   - **Si chi** (stagnant): speed < 0.08 · u_in, measured once flow has settled → blue-grey
   - "Settled" = mean fluid speed changes by less than a small tolerance over a window of N steps, or a max step count is reached (both in config).
 - **Sim statistics passed to the rules:** % of floor area in each class, the class mix over the bed's footprint, and stagnant regions larger than 0.5 m².
+  - The bed is solid in 2D, so "over the bed's footprint" is measured in a band around the bed (`CHI.bedZoneCm`, 30 cm).
+  - Viscosity (tau) is scaled with cell size so standard and high quality give the same picture.
 - The simulation is a visual metaphor and not physical air-flow modelling. Say so in the About panel.
 
 ## Rule engine spec (Western bedroom feng shui)

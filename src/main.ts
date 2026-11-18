@@ -10,7 +10,9 @@ import { loadLayout, loadPrefs, savePrefs, startAutosave } from './storage/autos
 import { deleteSelected, duplicateSelected, nudgeSelected, rotateSelected } from './ui/actions';
 import { buildPalette } from './ui/palette';
 import { buildProperties } from './ui/properties';
-import { buildToolbar } from './ui/toolbar';
+import { buildToolbar, type AppMode } from './ui/toolbar';
+import { SimController, type SimStatus } from './sim/controller';
+import { buildSimPanel } from './ui/simPanel';
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -23,6 +25,38 @@ startAutosave(store);
 const editor = new Editor($<HTMLDivElement>('canvas-host'), store, getUnits);
 buildPalette($('palette'), store);
 const refreshProperties = buildProperties($('properties'), store, getUnits);
+// ---------------------------------------------------------------- Simulate mode
+
+const sim = new SimController($<HTMLCanvasElement>('flow-canvas'), store, () => editor.getView());
+buildSimPanel($('sim-panel'), sim);
+
+function setMode(mode: AppMode): void {
+  const simulate = mode === 'simulate';
+  $('palette').hidden = simulate;
+  $('sim-panel').hidden = !simulate;
+  editor.setSimulateMode(simulate);
+  if (simulate) sim.enter();
+  else sim.exit();
+  updateBanner(sim.status);
+}
+
+/** Message shown over the plan when the flow needs explaining. */
+function updateBanner(s: SimStatus): void {
+  const banner = $('sim-banner');
+  let text = '';
+  if (s.active) {
+    if (s.mode === 'doorClosed') text = 'Open the door to let chi in.';
+    else if (s.mode === 'noDoor') text = 'Add a door so chi has a way in.';
+    else if (s.unstable) text = 'The simulation went unstable. Press Reset to try again.';
+    else if (s.mode === 'split') {
+      text = 'Only the door is open, so chi flows in through one half of the doorway and out through the other. Open a window for a fuller flow.';
+    }
+  }
+  banner.textContent = text;
+  banner.hidden = !text;
+}
+sim.subscribe(updateBanner);
+
 buildToolbar($('toolbar'), {
   store,
   getUnits,
@@ -32,6 +66,7 @@ buildToolbar($('toolbar'), {
     refreshProperties();
     editor.render();
   },
+  setMode,
 });
 
 // ---------------------------------------------------------------- Keyboard shortcuts

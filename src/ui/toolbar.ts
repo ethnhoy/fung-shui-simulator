@@ -7,13 +7,16 @@ import { sampleLayout } from '../model/sample';
 import { exportLayout, importLayoutFile } from '../storage/importExport';
 import { h, toast } from './dom';
 
+export type AppMode = 'edit' | 'simulate';
+
 interface ToolbarOptions {
   store: Store;
   getUnits: () => UnitSystem;
   setUnits: (u: UnitSystem) => void;
+  setMode: (m: AppMode) => void;
 }
 
-export function buildToolbar(root: HTMLElement, { store, getUnits, setUnits }: ToolbarOptions): void {
+export function buildToolbar(root: HTMLElement, { store, getUnits, setUnits, setMode }: ToolbarOptions): void {
   const isMac = navigator.platform.toLowerCase().includes('mac');
   const mod = isMac ? '⌘' : 'Ctrl+';
 
@@ -41,6 +44,23 @@ export function buildToolbar(root: HTMLElement, { store, getUnits, setUnits }: T
     }
   });
 
+  // Edit / Simulate switch. Both modes allow moving furniture; Simulate adds the chi flow.
+  const modeButtons = (['edit', 'simulate'] as AppMode[]).map((m) => {
+    const btn = h('button', { type: 'button', class: 'mode', role: 'tab', 'data-mode': m }, m === 'edit' ? 'Edit' : 'Simulate');
+    btn.addEventListener('click', () => selectMode(m));
+    return btn;
+  });
+  const selectMode = (m: AppMode) => {
+    for (const b of modeButtons) {
+      const active = b.dataset.mode === m;
+      b.classList.toggle('active', active);
+      b.setAttribute('aria-selected', String(active));
+    }
+    setMode(m);
+  };
+  const modeSwitch = h('div', { class: 'mode-switch', role: 'tablist', 'aria-label': 'Mode' }, modeButtons);
+  modeButtons[0].classList.add('active');
+
   const refreshHistory = () => {
     undoBtn.disabled = !store.canUndo;
     redoBtn.disabled = !store.canRedo;
@@ -51,10 +71,7 @@ export function buildToolbar(root: HTMLElement, { store, getUnits, setUnits }: T
 
   root.replaceChildren(
     h('div', { class: 'brand' }, h('span', { class: 'brand-mark', 'aria-hidden': 'true' }, '◐'), 'Chi Flow'),
-    h('div', { class: 'mode-switch', role: 'tablist', 'aria-label': 'Mode' },
-      h('button', { type: 'button', class: 'mode active', role: 'tab', 'aria-selected': 'true' }, 'Edit'),
-      h('button', { type: 'button', class: 'mode', role: 'tab', disabled: true, title: 'Coming in milestone 2' }, 'Simulate'),
-    ),
+    modeSwitch,
     h('div', { class: 'toolbar-spacer' }),
     undoBtn,
     redoBtn,
